@@ -138,7 +138,8 @@ See sql/schema.sql, docs/database_design.md, docs/star_schema.mmd and the genera
 - `src/02_clean_data.py`: validation, cleaning, derived fields, quarantine and quality log.
 - `src/04_analysis_charts.py`: seven labelled charts and KPI/summary CSV outputs.
 - `src/06_manual_validation.py`: independent grade/result arithmetic check for 20 students.
-- `src/07_export_business_rules.py`: Power BI-friendly rule CSV exports from the canonical JSON file.\n- `src/08_render_star_schema.py`: generates PNG and SVG schema diagrams from the documented model.
+- `src/07_export_business_rules.py`: Power BI-friendly rule CSV exports from the canonical JSON file.
+- `src/08_render_star_schema.py`: generates PNG and SVG schema diagrams from the documented model.
 - `notebooks/Student_Performance_Analysis.ipynb`: executed EDA and KPI walkthrough.
 
 ## 11. Oracle SQL and PL/SQL
