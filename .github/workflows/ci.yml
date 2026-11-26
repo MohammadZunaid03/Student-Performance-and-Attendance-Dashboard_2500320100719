@@ -32,6 +32,8 @@ jobs:
         run: python src/04_analysis_charts.py
       - name: Build Excel workbook
         run: python src/05_build_excel_workbook.py
+      - name: Hand-check 20 student records
+        run: python src/06_manual_validation.py
       - name: Run automated tests
         run: python tests/run_tests.py
       - name: Upload generated reports
