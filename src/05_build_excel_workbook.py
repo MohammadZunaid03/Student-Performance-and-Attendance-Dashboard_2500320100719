@@ -86,7 +86,7 @@ def main():
     ws.append(["Student Performance and Attendance Dashboard", "Value"])
     ws.append(["Total Students", "=COUNTA(StudentSummary[Student_ID])"])
     ws.append(["Average Marks (scored records)", '=AVERAGEIF(CleanedMarks[Record_Status],"PRESENT",CleanedMarks[Total_Marks])'])
-    ws.append(["Pass Percentage (scored records)", '=IFERROR(COUNTIF(CleanedMarks[Result],"PASS")/COUNTIF(Cleaned_Data[Record_Status],"PRESENT")*100,0)'])
+    ws.append(["Pass Percentage (scored records)", '=IFERROR(COUNTIF(CleanedMarks[Result],"PASS")/COUNTIF(CleanedMarks[Record_Status],"PRESENT")*100,0)'])
     ws.append(["Average Attendance", "=AVERAGE(AttendanceAnalysis[Attendance_Percentage])"])
     ws.append(["Provisional Low Attendance Threshold", 75])
     ws.append(["Data Source", "Synthetic fictional demonstration dataset"])
