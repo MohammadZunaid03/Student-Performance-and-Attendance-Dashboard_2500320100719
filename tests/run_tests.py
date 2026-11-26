@@ -26,7 +26,7 @@ if xml_path.exists():
             "test_case_id": case.attrib.get("name", ""),
             "test_description": case.attrib.get("classname", ""),
             "expected_result": "Validation assertion succeeds",
-            "actual_result": (failure or error).attrib.get("message", "") if (failure is not None or error is not None) else status,
+            "actual_result": (failure if failure is not None else error).attrib.get("message", "") if (failure is not None or error is not None) else status,
             "status": status,
         })
 pd.DataFrame(rows, columns=["test_case_id","test_description","expected_result","actual_result","status"]).to_csv(
