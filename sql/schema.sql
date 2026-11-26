@@ -31,6 +31,17 @@ CREATE TABLE dim_academic_term (
     CONSTRAINT ck_term_dates CHECK (end_date >= start_date)
 );
 
+CREATE TABLE dim_business_rule (
+    rule_key VARCHAR2(50) PRIMARY KEY,
+    numeric_value NUMBER(10,2) NOT NULL,
+    description VARCHAR2(250) NOT NULL
+);
+
+CREATE TABLE dim_grade_band (
+    grade_code VARCHAR2(5) PRIMARY KEY,
+    minimum_score NUMBER(5,2) NOT NULL UNIQUE CHECK (minimum_score BETWEEN 0 AND 100)
+);
+
 CREATE TABLE dim_date (
     date_key NUMBER(8) PRIMARY KEY,
     calendar_date DATE NOT NULL UNIQUE,
@@ -61,9 +72,10 @@ CREATE TABLE fact_marks (
       (total_marks IS NULL OR total_marks >= 0)
     ),
     CONSTRAINT ck_marks_absent CHECK (
-      (record_status = 'PRESENT' AND internal_marks IS NOT NULL AND external_marks IS NOT NULL AND total_marks IS NOT NULL)
-      OR
-      (record_status IN ('ABSENT','MISSING') AND total_marks IS NULL)
+      (record_status = 'PRESENT' AND internal_marks IS NOT NULL AND external_marks IS NOT NULL
+       AND total_marks IS NOT NULL AND result IN ('PASS','FAIL'))
+      OR (record_status = 'ABSENT' AND total_marks IS NULL AND result = 'ABSENT')
+      OR (record_status = 'MISSING' AND total_marks IS NULL AND result = 'MISSING')
     ),
     CONSTRAINT uq_marks_grain UNIQUE (student_key, subject_key, term_key)
 );
@@ -96,3 +108,6 @@ CREATE INDEX ix_fact_att_term ON fact_attendance(term_key);
 -- Load dimensions before facts. Populate DIM_DATE for any reporting date range
 -- required by the Power BI date table. The current aggregate fact grain is term-level;
 -- do not join fact tables directly to each other.
+
+-- DIM_BUSINESS_RULE and DIM_GRADE_BAND are loaded from config/business_rules.json
+-- by src/03_load_sql.py. This keeps thresholds and grade boundaries centralised.
