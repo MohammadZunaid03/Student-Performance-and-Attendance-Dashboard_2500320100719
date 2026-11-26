@@ -44,6 +44,7 @@ def main():
     low_threshold = 75.0  # Provisional demo threshold; confirm institutional policy.
     student_att = attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
     low_attendance = student_att[student_att < low_threshold]
+    low_attendance.rename("Average_Attendance_Percentage").to_csv(REPORTS / "low_attendance_students.csv")
 
     # 1. Marks distribution.
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -88,6 +89,12 @@ def main():
     student_totals = scored.groupby("Student_ID", as_index=False)["Total_Marks"].sum()
     student_totals = student_totals.merge(students[["Student_ID", "Student_Name"]], on="Student_ID")
     top = student_totals.sort_values(["Total_Marks", "Student_ID"], ascending=[False, True]).head(10)
+    top.to_csv(REPORTS / "top_students.csv", index=False)
+    pd.DataFrame([{"Pass_Records": pass_count, "Fail_Records": fail_count,
+                   "Scored_Records": len(scored), "Pass_Percentage": round(pass_rate, 2),
+                   "Absent_Records": int(marks["Record_Status"].eq("ABSENT").sum()),
+                   "Missing_Records": int(marks["Record_Status"].eq("MISSING").sum())}]).to_csv(
+        REPORTS / "pass_rate_summary.csv", index=False)
     fig, ax = plt.subplots(figsize=(9, 5))
     ax.barh(top["Student_Name"][::-1], top["Total_Marks"][::-1])
     ax.set(title="Top 10 Students by Aggregate Scored Marks", xlabel="Aggregate marks", ylabel="Student")
