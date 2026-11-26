@@ -39,5 +39,6 @@
   "missing_result": "MISSING",
   "absent_grade": "AB",
   "missing_grade": "NA",
-  "notes": "All values are provisional synthetic demonstration settings. Confirm institutional regulations before official use."
+  "notes": "All values are provisional synthetic demonstration settings. Confirm institutional regulations before official use.",
+  "passing_marks_default": 40
 }
