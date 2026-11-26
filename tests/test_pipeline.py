@@ -89,3 +89,33 @@ def test_python_totals_match_oracle_when_configured():
         assert abs(expected - actual) < 0.01
     finally:
         conn.close()
+
+
+
+def test_grade_boundaries_are_consistent_with_demo_policy():
+    import runpy
+    module = runpy.run_path(str(ROOT / "src" / "02_clean_data.py"))
+    grade_for = module["grade_for"]
+    assert grade_for(95) == "A+"
+    assert grade_for(85) == "A"
+    assert grade_for(75) == "B"
+    assert grade_for(65) == "C"
+    assert grade_for(55) == "D"
+    assert grade_for(45) == "E"
+    assert grade_for(39) == "F"
+
+
+def test_pass_fail_matches_configured_subject_passing_marks():
+    marks = load("marks.csv")
+    present = marks[marks["Record_Status"].eq("PRESENT")]
+    expected = present.apply(
+        lambda row: "PASS" if row["Total_Marks"] >= row["Passing_Marks"] else "FAIL",
+        axis=1
+    )
+    assert (expected.reset_index(drop=True) == present["Result"].reset_index(drop=True)).all()
+
+
+def test_dense_rank_preserves_ties():
+    scores = pd.Series([95, 95, 90, 80])
+    ranks = scores.rank(method="dense", ascending=False).astype(int).tolist()
+    assert ranks == [1, 1, 2, 3]
