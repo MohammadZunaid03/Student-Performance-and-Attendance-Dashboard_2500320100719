@@ -117,7 +117,7 @@ def main():
     ws.append(["Average Marks (scored records)", '=AVERAGEIF(CleanedMarks[Record_Status],"PRESENT",CleanedMarks[Total_Marks])'])
     ws.append(["Pass Percentage (scored records)", '=IFERROR(COUNTIF(CleanedMarks[Result],"PASS")/COUNTIF(CleanedMarks[Record_Status],"PRESENT")*100,0)'])
     ws.append(["Average Attendance", "=AVERAGE(AttendanceAnalysis[Attendance_Percentage])"])
-    ws.append(["Configured Low Attendance Threshold", '=MAXIFS(BusinessRules[Numeric_Value],BusinessRules[Rule_Key],"ATTENDANCE_THRESHOLD_PCT")'])
+    ws.append(["Configured Low Attendance Threshold", '=SUMIF(BusinessRules[Rule_Key],"ATTENDANCE_THRESHOLD_PCT",BusinessRules[Numeric_Value])'])
     ws.append(["Low Attendance Students", '=COUNTIF(StudentSummary[Average_Attendance],"<"&B6)'])
     ws.append(["Marks Total for PASS Records", '=SUMIF(CleanedMarks[Result],"PASS",CleanedMarks[Total_Marks])'])
     ws.append(["Data Source", "Synthetic fictional demonstration dataset"])
