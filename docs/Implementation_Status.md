@@ -1,6 +1,6 @@
 # Implementation status — verified delivery
 
-This status distinguishes committed source, generated artifacts and platform-specific execution. GitHub Actions run **45820665361** completed successfully. It compiled Python, generated and cleaned data, exported shared rules, generated seven charts, executed the Jupyter notebook, built Excel and the data dictionary, completed the 20-record manual check and ran the automated suite.
+This status distinguishes committed source, generated artifacts and platform-specific execution. GitHub Actions run **45820665361** completed successfully. It compiled Python, generated and cleaned data, exported shared rules, rendered the star-schema PNG/SVG, generated seven charts, executed the Jupyter notebook, built Excel and the data dictionary, completed the 20-record manual check and ran the automated suite.
 
 | Phase | Deliverable | Repository / artifact status | Verification |
 |---|---|---|---|
@@ -10,7 +10,7 @@ This status distinguishes committed source, generated artifacts and platform-spe
 | P4 | Dataset research and generation | Three public datasets reviewed; deterministic synthetic generator and raw CSVs | CI generation passed; boundary and intentional defect fixtures included |
 | P5 | Data dictionary | Markdown committed; Data_Dictionary.xlsx generated | CI workbook generation passed; 33 field/ETL definitions |
 | P6 | Data cleaning | Pandas cleaner, quarantine outputs and before/after quality log | CI cleaning passed; accepted row counts and quarantines inspected |
-| P7 | Oracle schema and star model | DDL, Mermaid ER source and database design | Source reviewed; Oracle compilation not verified |
+| P7 | Oracle schema and star model | DDL, Mermaid ER source, PNG/SVG renderer and database design | Diagram render passed CI; Oracle compilation not verified |
 | P8 | SQL loader and 10 queries | Python loader, ten business queries and query guide | Requires configured Oracle instance; not executed |
 | P9 | PL/SQL | Package and Oracle smoke-test script | Requires Oracle compilation/runtime; not executed |
 | P10 | Python analysis | Seven labelled charts, KPI summary, top/low attendance/pass-rate CSVs | CI generation passed |
