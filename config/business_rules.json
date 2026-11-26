@@ -1,0 +1,43 @@
+{
+  "attendance_threshold_pct": 75,
+  "assessment_components": {
+    "internal_max": 40,
+    "external_max": 60,
+    "total_max": 100
+  },
+  "grade_bands": [
+    {
+      "min_score": 90,
+      "grade": "A+"
+    },
+    {
+      "min_score": 80,
+      "grade": "A"
+    },
+    {
+      "min_score": 70,
+      "grade": "B"
+    },
+    {
+      "min_score": 60,
+      "grade": "C"
+    },
+    {
+      "min_score": 50,
+      "grade": "D"
+    },
+    {
+      "min_score": 40,
+      "grade": "E"
+    },
+    {
+      "min_score": 0,
+      "grade": "F"
+    }
+  ],
+  "absent_result": "ABSENT",
+  "missing_result": "MISSING",
+  "absent_grade": "AB",
+  "missing_grade": "NA",
+  "notes": "All values are provisional synthetic demonstration settings. Confirm institutional regulations before official use."
+}
