@@ -179,7 +179,7 @@ with tabs[4]:
     st.subheader("Student ranking")
     st.caption("Dense ranking preserves equal aggregate marks.")
     st.dataframe(
-        student_totals.sort_values(["Rank", "Student_ID"]).head(10),
+        student_totals.loc[student_totals["Rank"] <= 10].sort_values(["Rank", "Student_ID"]),
         use_container_width=True, hide_index=True
     )
     selected_student = st.selectbox(
