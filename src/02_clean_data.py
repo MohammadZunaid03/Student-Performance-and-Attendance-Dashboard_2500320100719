@@ -5,14 +5,18 @@ Invalid records are quarantined, not silently discarded.
 """
 from pathlib import Path
 import pandas as pd
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from business_rules import RULES
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 CLEAN = ROOT / "data" / "clean"
 REPORTS = ROOT / "reports"
-ATTENDANCE_THRESHOLD = 75.0  # Provisional demo value; confirm institutional policy.
-GRADE_BOUNDARIES = [(90, "A+"), (80, "A"), (70, "B"), (60, "C"),
-                    (50, "D"), (40, "E"), (0, "F")]
+ATTENDANCE_THRESHOLD = float(RULES["attendance_threshold_pct"])
+GRADE_BOUNDARIES = [(int(item["min_score"]), item["grade"]) for item in RULES["grade_bands"]]
+INTERNAL_MAX = int(RULES["assessment_components"]["internal_max"])
+EXTERNAL_MAX = int(RULES["assessment_components"]["external_max"])
 
 
 def read_csv(name):
@@ -31,7 +35,7 @@ def grade_for(total):
     for boundary, grade in GRADE_BOUNDARIES:
         if total >= boundary:
             return grade
-    return "F"
+    return GRADE_BOUNDARIES[-1][1]
 
 
 def main():
@@ -94,8 +98,10 @@ def main():
     # Synthetic source split is documented as 40 internal + 60 external.
     invalid = ((bounds["Record_Status"] == "PRESENT") &
                (bounds["Internal_Marks"].isna() | bounds["External_Marks"].isna() |
-                (bounds["Internal_Marks"] < 0) | (bounds["Internal_Marks"] > 40) |
-                (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > 60)))
+                (bounds["Internal_Marks"] < 0) | (bounds["Internal_Marks"] > INTERNAL_MAX) |
+                (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > EXTERNAL_MAX) |
+                ((bounds["Internal_Marks"] + bounds["External_Marks"]) > bounds["Maximum_Marks"]) |
+                ~bounds["Record_Status"].isin(["PRESENT", "ABSENT", "MISSING"])))
     add_log(log, "marks_out_of_range_or_incomplete", "Quarantine PRESENT rows with missing/out-of-range component marks", invalid.sum())
     mark_rejects = pd.concat([mark_rejects, bounds.loc[invalid, marks.columns]], ignore_index=True)
     bounds = bounds.loc[~invalid].copy()
@@ -104,8 +110,8 @@ def main():
     bounds["Total_Marks"] = pd.NA
     present = bounds["Record_Status"].eq("PRESENT")
     bounds.loc[present, "Total_Marks"] = bounds.loc[present, "Internal_Marks"] + bounds.loc[present, "External_Marks"]
-    bounds["Result"] = bounds["Record_Status"].map({"ABSENT": "ABSENT", "MISSING": "MISSING"})
-    bounds["Grade"] = bounds["Record_Status"].map({"ABSENT": "AB", "MISSING": "NA"})
+    bounds["Result"] = bounds["Record_Status"].map({"ABSENT": RULES["absent_result"], "MISSING": RULES["missing_result"]})
+    bounds["Grade"] = bounds["Record_Status"].map({"ABSENT": RULES["absent_grade"], "MISSING": RULES["missing_grade"]})
     for idx in bounds.index[present]:
         total = float(bounds.at[idx, "Total_Marks"])
         passing = float(bounds.at[idx, "Passing_Marks"])
