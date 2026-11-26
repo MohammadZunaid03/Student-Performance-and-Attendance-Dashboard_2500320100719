@@ -7,19 +7,19 @@ This file distinguishes committed source/documentation from artifacts that have 
 | P1 | Project definition | Committed | Requirements baseline drafted |
 | P2 | Synopsis | Committed | Six-week plan documented |
 | P3 | SRS | Committed | Acceptance criteria documented |
-| P4 | Generator and raw CSVs | Committed | Generator/runtime reproducibility not yet executed in this environment |
-| P5 | Data dictionary | Markdown committed; XLSX generator included | XLSX awaits local execution |
+| P4 | Generator and raw CSVs | Committed | Five raw CSVs present; generator/runtime reproducibility not yet executed here |
+| P5 | Data dictionary | Markdown committed; XLSX generation added to workbook builder | XLSX awaits local execution |
 | P6 | Cleaning pipeline | Script and rules committed | Clean outputs and quality log await execution |
 | P7 | Oracle star schema | DDL and Mermaid ER source committed | Oracle DDL not compiled; PNG rendering pending |
 | P8 | Loader and 10 SQL queries | Committed | Requires configured Oracle instance |
 | P9 | PL/SQL package | Committed | Requires Oracle compilation and tests |
-| P10 | Seven-chart analysis | Script committed | Charts and KPI summary await execution |
+| P10 | Seven-chart analysis | Script committed; low-attendance/topper/pass-rate CSV exports added | Charts and KPI exports await execution |
 | P11 | Jupyter notebook | Committed | Notebook cells not yet executed |
 | P12 | Streamlit dashboard | Source committed | App runtime not yet tested |
 | P13 | Power BI data model | Guide and DAX committed | Model must be created in Power BI Desktop |
 | P14 | Power BI report | Three-page guide committed | PBIX and screenshots not yet created |
-| P15 | Excel verification | Workbook generator and guide committed | Workbook awaits execution; native PivotTables/slicers require Excel Desktop |
-| P16 | Automated tests | Tests, runner and CI workflow committed | Tests not yet run; Oracle integration requires credentials |
+| P15 | Excel verification | Workbook and dictionary generators plus guide committed | Workbooks await execution; native PivotTables/slicers require Excel Desktop |
+| P16 | Automated tests | Tests, CSV runner, 20-record hand-check script and CI workflow committed | Tests not yet run; Oracle integration requires credentials |
 | P17 | README | Updated | Documentation committed |
 | P18 | Final report | Evidence-based draft committed | Actual findings await pipeline execution |
 | P19 | Viva | 40-question bank committed | Interactive viva can be conducted in chat |
@@ -34,6 +34,7 @@ From the repository root, install requirements and run:
 2. python src/02_clean_data.py
 3. python src/04_analysis_charts.py
 4. python src/05_build_excel_workbook.py
-5. python tests/run_tests.py
+5. python src/06_manual_validation.py
+6. python tests/run_tests.py
 
 Then configure Oracle, run schema/loader/PLSQL, and finish Power BI/Excel desktop steps. Update this status only with actual run evidence.
