@@ -99,6 +99,8 @@ def main():
     add_log(log, "marks_out_of_range_or_incomplete", "Quarantine PRESENT rows with missing/out-of-range component marks", invalid.sum())
     mark_rejects = pd.concat([mark_rejects, bounds.loc[invalid, marks.columns]], ignore_index=True)
     bounds = bounds.loc[~invalid].copy()
+    add_log(log, "absent_marks", "Retain ABSENT rows with null score; never coerce to zero", (bounds["Record_Status"] == "ABSENT").sum())
+    add_log(log, "missing_marks", "Retain MISSING rows with null score; never coerce to zero", (bounds["Record_Status"] == "MISSING").sum())
     bounds["Total_Marks"] = pd.NA
     present = bounds["Record_Status"].eq("PRESENT")
     bounds.loc[present, "Total_Marks"] = bounds.loc[present, "Internal_Marks"] + bounds.loc[present, "External_Marks"]
@@ -110,6 +112,7 @@ def main():
         bounds.at[idx, "Result"] = "PASS" if total >= passing else "FAIL"
         bounds.at[idx, "Grade"] = grade_for(total)
     bounds[marks.columns.tolist() + ["Maximum_Marks", "Passing_Marks"]].to_csv(CLEAN / "marks.csv", index=False)
+    mark_rejects.to_csv(CLEAN / "quarantine_marks.csv", index=False)
 
     # Attendance: recalculate absent count and percentage; quarantine impossible counts.
     attendance = read_csv("attendance.csv")
