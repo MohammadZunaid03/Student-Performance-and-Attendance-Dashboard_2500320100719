@@ -79,9 +79,21 @@ def main():
     student_summary["Topper_Status"] = student_summary["Rank"].map(lambda value: "TOPPER" if value == 1 else "")
     ws = wb.create_sheet("Student_Summary")
     add_frame(ws, student_summary, "StudentSummary")
+    for row in range(2, ws.max_row + 1):
+        ws.cell(row, 8, f'=RANK.EQ(F{row},$F$2:$F${ws.max_row},0)')
+        ws.cell(row, 9, f'=IF(H{row}=1,"TOPPER","")')
 
     ws = wb.create_sheet("Attendance_Analysis")
-    add_frame(ws, attendance.merge(students, on="Student_ID", how="left"), "AttendanceAnalysis")
+    attendance_detail = attendance.merge(students, on="Student_ID", how="left")
+    attendance_detail["Recalculated_Absent_Classes"] = attendance_detail["Total_Classes"] - attendance_detail["Present_Classes"]
+    attendance_detail["Recalculated_Attendance_Percentage"] = (
+        attendance_detail["Present_Classes"] / attendance_detail["Total_Classes"] * 100
+    ).round(2)
+    attendance_detail["Validation_Status"] = (
+        attendance_detail["Absent_Classes"].eq(attendance_detail["Recalculated_Absent_Classes"])
+        & (attendance_detail["Attendance_Percentage"] - attendance_detail["Recalculated_Attendance_Percentage"]).abs().lt(0.01)
+    ).map({True: "PASS", False: "CHECK"})
+    add_frame(ws, attendance_detail, "AttendanceAnalysis")
 
     subject_summary = marks[marks["Record_Status"].eq("PRESENT")].merge(
         subjects[["Subject_ID", "Subject_Name"]], on="Subject_ID")
