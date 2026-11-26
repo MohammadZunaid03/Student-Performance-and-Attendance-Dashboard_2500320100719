@@ -178,8 +178,21 @@ def main():
     terms["End_Date"] = pd.to_datetime(terms["End_Date"], errors="coerce")
     bad_terms = terms["Start_Date"].isna() | terms["End_Date"].isna() | (terms["End_Date"] < terms["Start_Date"])
     add_log(log, "invalid_academic_terms", "Quarantine terms with invalid dates or end before start", bad_terms.sum())
-    terms.loc[~bad_terms].to_csv(CLEAN / "academic_terms.csv", index=False)
+    valid_terms = terms.loc[~bad_terms].copy()
+    valid_terms.to_csv(CLEAN / "academic_terms.csv", index=False)
     terms.loc[bad_terms].to_csv(CLEAN / "quarantine_academic_terms.csv", index=False)
+    if len(valid_terms) != 1:
+        raise ValueError(
+            "The current source facts do not carry a term identifier. "
+            "This prototype requires exactly one valid academic term; add Term_ID "
+            "to source facts before loading multiple terms."
+        )
+    # Add the single validated term key to clean fact files for dimensional modelling.
+    term_id = str(valid_terms.iloc[0]["Term_ID"])
+    bounds["Term_ID"] = term_id
+    attendance["Term_ID"] = term_id
+    bounds.to_csv(CLEAN / "marks.csv", index=False)
+    attendance.to_csv(CLEAN / "attendance.csv", index=False)
 
     pd.DataFrame(log, columns=["issue", "rule_applied", "rows_affected", "before", "after"]).to_csv(
         REPORTS / "data_quality_log.csv", index=False
