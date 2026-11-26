@@ -1,40 +1,46 @@
-# Implementation status
+# Implementation status — verified delivery
 
-This file distinguishes committed source/documentation from artifacts that have actually been generated or executed. A Git commit alone is not evidence of runtime validation.
+This status distinguishes committed source, generated artifacts and platform-specific execution. GitHub Actions run **45820144140** completed successfully. It compiled Python, generated and cleaned data, exported shared rules, generated seven charts, executed the Jupyter notebook, built Excel and the data dictionary, completed the 20-record manual check and ran the automated suite.
 
-| Phase | Deliverable | Repository status | Verification status |
+| Phase | Deliverable | Repository / artifact status | Verification |
 |---|---|---|---|
-| P1 | Project definition | Committed | Requirements baseline drafted |
-| P2 | Synopsis | Committed | Six-week plan documented |
-| P3 | SRS | Committed | Acceptance criteria documented |
-| P4 | Generator and raw CSVs | Committed | Five raw CSVs present; generator/runtime reproducibility not yet executed here |
-| P5 | Data dictionary | Markdown committed; XLSX generation added to workbook builder | XLSX awaits local execution |
-| P6 | Cleaning pipeline | Script and rules committed | Clean outputs and quality log await execution |
-| P7 | Oracle star schema | DDL and Mermaid ER source committed | Oracle DDL not compiled; PNG rendering pending |
-| P8 | Loader and 10 SQL queries | Committed | Requires configured Oracle instance |
-| P9 | PL/SQL package | Committed | Requires Oracle compilation and tests |
-| P10 | Seven-chart analysis | Script committed; low-attendance/topper/pass-rate CSV exports added | Charts and KPI exports await execution |
-| P11 | Jupyter notebook | Committed | Notebook cells not yet executed |
-| P12 | Streamlit dashboard | Source committed | App runtime not yet tested |
-| P13 | Power BI data model | Guide and DAX committed | Model must be created in Power BI Desktop |
-| P14 | Power BI report | Three-page guide committed | PBIX and screenshots not yet created |
-| P15 | Excel verification | Workbook and dictionary generators plus guide committed | Workbooks await execution; native PivotTables/slicers require Excel Desktop |
-| P16 | Automated tests | Tests, CSV runner, 20-record hand-check script and CI workflow committed | Tests not yet run; Oracle integration requires credentials |
-| P17 | README | Updated | Documentation committed |
-| P18 | Final report | Evidence-based draft committed | Actual findings await pipeline execution |
-| P19 | Viva | 40-question bank committed | Interactive viva can be conducted in chat |
-| P20 | Final evaluation | Checklist committed | Final score withheld until artifacts are verified |
+| P1 | Project definition | Committed | Objectives and KPI numerators/denominators documented |
+| P2 | Synopsis | Committed | Scope, stakeholders, timeline and deliverables documented |
+| P3 | SRS | Committed | Functional and measurable non-functional requirements documented |
+| P4 | Dataset research and generation | Three public datasets reviewed; deterministic synthetic generator and raw CSVs | CI generation passed; boundary and intentional defect fixtures included |
+| P5 | Data dictionary | Markdown committed; Data_Dictionary.xlsx generated | CI workbook generation passed; 33 field/ETL definitions |
+| P6 | Data cleaning | Pandas cleaner, quarantine outputs and before/after quality log | CI cleaning passed; accepted row counts and quarantines inspected |
+| P7 | Oracle schema and star model | DDL, Mermaid ER source and database design | Source reviewed; Oracle compilation not verified |
+| P8 | SQL loader and 10 queries | Python loader, ten business queries and query guide | Requires configured Oracle instance; not executed |
+| P9 | PL/SQL | Package and Oracle smoke-test script | Requires Oracle compilation/runtime; not executed |
+| P10 | Python analysis | Seven labelled charts, KPI summary, top/low attendance/pass-rate CSVs | CI generation passed |
+| P11 | Jupyter notebook | Guided notebook with EDA, KPIs and charts | Notebook execution passed in CI |
+| P12 | Streamlit dashboard | Five-section filtered app | Streamlit AppTest passed in CI |
+| P13 | Power BI data model | Relationships, DAX, shared rules and calendar limitations | Documentation/DAX source committed; no Desktop model validation |
+| P14 | Power BI report | Three-page visual/slicer/drill-through guide | PBIX and screenshots not created |
+| P15 | Excel verification | Workbook, formulas, chart, validation, quality checks and dictionary | CI generation passed; native PivotTables/slicers require Excel Desktop |
+| P16 | Automated tests | pytest suite, test CSV, manual 20-record check and CI | 17 PASS, 0 FAIL, 1 SKIP; Oracle integration skipped for missing credentials |
+| P17 | README | Updated project setup and limitations | Committed |
+| P18 | Final academic report | Completed with measured synthetic results | Numbers sourced from successful CI artifact |
+| P19 | Viva preparation | 40-question practice bank | Committed |
+| P20 | Final evaluation | Evidence-based scorecard | 75/100 implementation coverage; see docs/05_Final_Evaluation.md |
 
-## Environment limitations
-The repository integration can commit source files but cannot execute Python inside the user's local environment, compile against their Oracle database, create a native Power BI PBIX in Power BI Desktop, or add native Excel PivotTable slicers. A GitHub Actions workflow was added for Python validation, but no workflow run was returned by GitHub at the time this status was recorded.
+## Verified synthetic-data results
+- Raw: 201 student rows, 5 subjects, 1,001 marks rows, 1,001 attendance rows and 1 academic term.
+- Clean: 200 students, 5 subjects, 996 marks records, 997 attendance records and 1 term.
+- Quarantined: 1 student, 5 marks and 4 attendance rows; no subject or term rows quarantined.
+- Scored marks: 994; PASS 853; FAIL 141; pass percentage 85.81%.
+- Average marks: 61.44; average attendance: 85.07%.
+- One student below provisional 75% threshold.
+- Manual check: 20/20 grade/result calculations matched.
 
-## Required next execution
-From the repository root, install requirements and run:
-1. python src/01_generate_data.py
-2. python src/02_clean_data.py
-3. python src/04_analysis_charts.py
-4. python src/05_build_excel_workbook.py
-5. python src/06_manual_validation.py
-6. python tests/run_tests.py
+These are fictional demonstration results, not institutional findings.
 
-Then configure Oracle, run schema/loader/PLSQL, and finish Power BI/Excel desktop steps. Update this status only with actual run evidence.
+## Outstanding external requirements
+1. Create a dedicated Oracle schema, run sql/schema.sql, execute src/03_load_sql.py with credentials, compile the PL/SQL package and run its smoke test. Then compare Oracle and Python KPIs.
+2. Open Power BI Desktop, import the documented tables, build the three report pages and save powerbi/Student_Performance_Dashboard.pbix with genuine screenshots.
+3. Open the generated Excel workbook in Excel Desktop, add native PivotTables and slicers, refresh formulas and check the Validation sheet against Oracle outputs.
+4. Record a short demonstration video if required by the institution.
+
+## Safety notes
+The Oracle loader performs a full reload of project tables. Use a dedicated project schema and back it up before execution. Never commit database credentials or real student identifiers. The 75% attendance threshold, 40/60 assessment split, passing mark and grade bands are provisional demo rules.
