@@ -80,13 +80,15 @@ def main():
     student_summary["Department_Lookup_Check"] = ""
     ws = wb.create_sheet("Student_Summary")
     add_frame(ws, student_summary, "StudentSummary")
-    for row in range(2, ws.max_row + 1):
+    last_student_row = ws.max_row
+    rank_range = "$F$2:$F$" + str(last_student_row)
+    for row in range(2, last_student_row + 1):
         ws.cell(row, 6, f'=SUMIFS(CleanedMarks[Total_Marks],CleanedMarks[Student_ID],A{row},CleanedMarks[Record_Status],"PRESENT")')
         ws.cell(row, 7, f'=AVERAGEIF(AttendanceAnalysis[Student_ID],A{row},AttendanceAnalysis[Attendance_Percentage])')
-        ws.cell(row, 8, f'=RANK.EQ(F{row},$F$2:$F$201,0)')
+        ws.cell(row, 8, f"=RANK.EQ(F{row},{rank_range},0)")
         ws.cell(row, 9, f'=IF(H{row}=1,"TOPPER","")')
         ws.cell(row, 10, f'=XLOOKUP(A{row},CleanedMarks[Student_ID],CleanedMarks[Department],"NOT FOUND")')
-    ws.tables["StudentSummary"].ref = "A1:J201"
+    ws.tables["StudentSummary"].ref = f"A1:J{last_student_row}"
 
     ws = wb.create_sheet("Attendance_Analysis")
     attendance_detail = attendance.merge(students, on="Student_ID", how="left")
