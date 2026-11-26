@@ -103,7 +103,15 @@ def main():
     students[10]["Department"] = ""
     students[11]["Student_Name"] = "  sTuDeNt 012 "
     students.append(dict(students[9]))
-    marks[0]["Internal_Marks"] = int(RULES["assessment_components"]["internal_max"]) + 80
+    internal_max = int(RULES["assessment_components"]["internal_max"])
+    external_max = int(RULES["assessment_components"]["external_max"])
+    total_max = int(RULES["assessment_components"]["total_max"])
+    passing_boundary = int(RULES["passing_marks_default"])
+    # Explicit boundary cases for minimum, pass threshold and maximum marks.
+    marks[10]["Internal_Marks"], marks[10]["External_Marks"], marks[10]["Total_Marks"] = 0, passing_boundary, passing_boundary
+    marks[11]["Internal_Marks"], marks[11]["External_Marks"], marks[11]["Total_Marks"] = internal_max, external_max, total_max
+    marks[12]["Internal_Marks"], marks[12]["External_Marks"], marks[12]["Total_Marks"] = 0, 0, 0
+    marks[0]["Internal_Marks"] = internal_max + 80
     marks[1]["External_Marks"] = -5
     marks.append(dict(marks[4]))
     attendance[0]["Present_Classes"] = attendance[0]["Total_Classes"] + 3
