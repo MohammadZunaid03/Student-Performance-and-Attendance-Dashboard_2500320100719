@@ -71,11 +71,16 @@ CREATE TABLE fact_marks (
       (external_marks IS NULL OR external_marks >= 0) AND
       (total_marks IS NULL OR total_marks >= 0)
     ),
+    CONSTRAINT ck_marks_total_sum CHECK (
+      record_status <> 'PRESENT' OR total_marks = internal_marks + external_marks
+    ),
     CONSTRAINT ck_marks_absent CHECK (
       (record_status = 'PRESENT' AND internal_marks IS NOT NULL AND external_marks IS NOT NULL
-       AND total_marks IS NOT NULL AND result IN ('PASS','FAIL'))
-      OR (record_status = 'ABSENT' AND total_marks IS NULL AND result = 'ABSENT')
-      OR (record_status = 'MISSING' AND total_marks IS NULL AND result = 'MISSING')
+       AND total_marks IS NOT NULL AND grade IS NOT NULL AND result IN ('PASS','FAIL'))
+      OR (record_status = 'ABSENT' AND internal_marks IS NULL AND external_marks IS NULL
+          AND total_marks IS NULL AND result = 'ABSENT')
+      OR (record_status = 'MISSING' AND internal_marks IS NULL AND external_marks IS NULL
+          AND total_marks IS NULL AND result = 'MISSING')
     ),
     CONSTRAINT uq_marks_grain UNIQUE (student_key, subject_key, term_key)
 );
@@ -94,7 +99,10 @@ CREATE TABLE fact_attendance (
       present_classes <= total_classes AND
       absent_classes = total_classes - present_classes
     ),
-    CONSTRAINT ck_attendance_pct CHECK (attendance_percentage BETWEEN 0 AND 100),
+    CONSTRAINT ck_attendance_pct CHECK (
+      attendance_percentage BETWEEN 0 AND 100 AND
+      ABS(attendance_percentage - ROUND(present_classes / total_classes * 100, 2)) < 0.01
+    ),
     CONSTRAINT uq_attendance_grain UNIQUE (student_key, subject_key, term_key)
 );
 
@@ -111,3 +119,31 @@ CREATE INDEX ix_fact_att_term ON fact_attendance(term_key);
 
 -- DIM_BUSINESS_RULE and DIM_GRADE_BAND are loaded from config/business_rules.json
 -- by src/03_load_sql.py. This keeps thresholds and grade boundaries centralised.
+
+-- Enforce component maxima and subject-specific total marks using the loaded
+-- central business-rule table. The ETL validates these values before insertion too.
+CREATE OR REPLACE TRIGGER trg_fact_marks_validate
+BEFORE INSERT OR UPDATE ON fact_marks
+FOR EACH ROW
+DECLARE
+    v_internal_max NUMBER;
+    v_external_max NUMBER;
+    v_subject_max NUMBER;
+BEGIN
+    IF :NEW.record_status = 'PRESENT' THEN
+        SELECT numeric_value INTO v_internal_max
+          FROM dim_business_rule WHERE rule_key = 'INTERNAL_MARKS_MAX';
+        SELECT numeric_value INTO v_external_max
+          FROM dim_business_rule WHERE rule_key = 'EXTERNAL_MARKS_MAX';
+        SELECT maximum_marks INTO v_subject_max
+          FROM dim_subject WHERE subject_key = :NEW.subject_key;
+
+        IF :NEW.internal_marks > v_internal_max OR :NEW.external_marks > v_external_max THEN
+            RAISE_APPLICATION_ERROR(-20002, 'Assessment component exceeds configured maximum');
+        END IF;
+        IF :NEW.total_marks > v_subject_max THEN
+            RAISE_APPLICATION_ERROR(-20003, 'Total marks exceed subject maximum');
+        END IF;
+    END IF;
+END;
+/
