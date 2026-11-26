@@ -28,7 +28,20 @@ Create one-to-many, single-direction relationships:
 Never create a direct fact-to-fact relationship. Both fact tables have one row per student-subject-term. Use shared dimensions or validated key-level detail joins.
 
 ## Calendar dimension limitation
-Oracle DIM_DATE is populated with calendar dates spanning each term. The current facts are term-level aggregates and contain no event date/date_key. Do not connect a calendar slicer to these facts or imply daily observations. When dated assessment/attendance events are available, add date keys to the appropriate facts and create date relationships. For this prototype, use Dim_Academic_Term for time filtering.
+Oracle DIM_DATE is populated with calendar dates spanning each term. In Power BI, a disconnected calendar table can be created and marked as a date table:
+```dax
+Dim_Date =
+CALENDAR(
+    MIN(Dim_Academic_Term[Start_Date]),
+    MAX(Dim_Academic_Term[End_Date])
+)
+
+Calendar Year = YEAR(Dim_Date[Date])
+Calendar Month Number = MONTH(Dim_Date[Date])
+Calendar Month = FORMAT(Dim_Date[Date], "MMMM")
+Calendar Quarter = "Q" & FORMAT(Dim_Date[Date], "Q")
+```
+The current facts are term-level aggregates and contain no event date/date_key. Do not connect this calendar to the facts or imply daily observations. When dated assessment/attendance events are available, add date keys to the appropriate facts and create date relationships. For this prototype, use Dim_Academic_Term for time filtering.
 
 ## DAX measures
 Create a dedicated Measures table and add the following measures. Import Business_Rules and Grade_Bands from the canonical JSON export so the attendance threshold is not hardcoded.
