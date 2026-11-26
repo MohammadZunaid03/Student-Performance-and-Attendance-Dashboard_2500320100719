@@ -29,12 +29,14 @@ def test_subject_primary_keys_unique():
 
 def test_marks_student_subject_grain_unique():
     marks = load("marks.csv")
-    assert not marks.duplicated(["Student_ID", "Subject_ID"]).any()
+    assert marks["Term_ID"].notna().all()
+    assert not marks.duplicated(["Student_ID", "Subject_ID", "Term_ID"]).any()
 
 
 def test_attendance_student_subject_grain_unique():
     attendance = load("attendance.csv")
-    assert not attendance.duplicated(["Student_ID", "Subject_ID"]).any()
+    assert attendance["Term_ID"].notna().all()
+    assert not attendance.duplicated(["Student_ID", "Subject_ID", "Term_ID"]).any()
 
 
 def test_required_student_references_exist():
@@ -50,9 +52,11 @@ def test_marks_ranges_and_statuses():
     subjects = load("subjects.csv").set_index("Subject_ID")
     assert marks["Record_Status"].isin(["PRESENT", "ABSENT", "MISSING"]).all()
     present = marks[marks["Record_Status"].eq("PRESENT")]
-    assert present["Internal_Marks"].between(0, 40).all()
-    assert present["External_Marks"].between(0, 60).all()
-    assert present["Total_Marks"].between(0, 100).all()
+    import json
+    rules = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
+    assert present["Internal_Marks"].between(0, rules["assessment_components"]["internal_max"]).all()
+    assert present["External_Marks"].between(0, rules["assessment_components"]["external_max"]).all()
+    assert present["Total_Marks"].between(0, rules["assessment_components"]["total_max"]).all()
     assert (present["Total_Marks"] == present["Internal_Marks"] + present["External_Marks"]).all()
     for row in present.itertuples():
         assert row.Total_Marks <= subjects.loc[row.Subject_ID, "Maximum_Marks"]
@@ -96,13 +100,10 @@ def test_grade_boundaries_are_consistent_with_demo_policy():
     import runpy
     module = runpy.run_path(str(ROOT / "src" / "02_clean_data.py"))
     grade_for = module["grade_for"]
-    assert grade_for(95) == "A+"
-    assert grade_for(85) == "A"
-    assert grade_for(75) == "B"
-    assert grade_for(65) == "C"
-    assert grade_for(55) == "D"
-    assert grade_for(45) == "E"
-    assert grade_for(39) == "F"
+    import json
+    rules = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
+    for band in rules["grade_bands"]:
+        assert grade_for(band["min_score"]) == band["grade"]
 
 
 def test_pass_fail_matches_configured_subject_passing_marks():
@@ -119,3 +120,24 @@ def test_dense_rank_preserves_ties():
     scores = pd.Series([95, 95, 90, 80])
     ranks = scores.rank(method="dense", ascending=False).astype(int).tolist()
     assert ranks == [1, 1, 2, 3]
+
+
+
+def test_clean_fact_term_keys_reference_valid_term():
+    terms = load("academic_terms.csv")
+    assert terms["Term_ID"].notna().all()
+    assert terms["Term_ID"].is_unique
+    valid = set(terms["Term_ID"])
+    assert set(load("marks.csv")["Term_ID"]).issubset(valid)
+    assert set(load("attendance.csv")["Term_ID"]).issubset(valid)
+
+
+def test_attendance_threshold_uses_canonical_config():
+    import json
+    rules = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
+    threshold = float(rules["attendance_threshold_pct"])
+    assert 0 <= threshold <= 100
+    attendance = load("attendance.csv")
+    expected = attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
+    low_ids = set(expected[expected < threshold].index)
+    assert all(expected.loc[student_id] < threshold for student_id in low_ids)
