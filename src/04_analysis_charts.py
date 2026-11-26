@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
-CHARTS = ROOT / "reports" / "charts"
-SUMMARY = ROOT / "reports" / "analysis_summary.md"
+REPORTS = ROOT / "reports"
+CHARTS = REPORTS / "charts"
+SUMMARY = REPORTS / "analysis_summary.md"
 
 
 def load(name):
