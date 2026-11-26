@@ -62,6 +62,7 @@ src/
   05_build_excel_workbook.py
   06_manual_validation.py
   07_export_business_rules.py
+  08_render_star_schema.py
 tests/
   test_pipeline.py
   test_dashboard.py
