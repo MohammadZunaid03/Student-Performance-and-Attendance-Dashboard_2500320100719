@@ -34,6 +34,8 @@ def add_log(log, issue, rule, count):
         "missing_department": ("Department is blank or null", "Department set to UNKNOWN; no department inferred"),
         "subjects_missing_id": ("Subject_ID is blank or null", "Row retained in quarantine_subjects.csv"),
         "duplicate_subjects": ("Duplicate Subject_ID", "First row retained; duplicate rows quarantined"),
+        "subjects_invalid_marks_policy": ("Maximum_Marks or Passing_Marks is missing, non-integer or outside valid range", "Row moved to quarantine_subjects.csv"),
+        "invalid_term_id": ("Term_ID is blank or duplicated", "Row moved to quarantine_academic_terms.csv"),
         "duplicate_marks": ("Duplicate student-subject-term grain", "First row retained; duplicate rows quarantined"),
         "marks_invalid_foreign_key": ("Missing or unknown Student_ID / Subject_ID", "Row moved to quarantine_marks.csv"),
         "marks_out_of_range_or_incomplete": ("Invalid status, missing score, component out of range or total above subject maximum", "Row moved to quarantine_marks.csv"),
@@ -199,6 +201,7 @@ def main():
     duplicate_terms = terms.duplicated(["Term_ID"], keep="first")
     missing_term_id = terms["Term_ID"].isna() | terms["Term_ID"].eq("")
     term_id_rejects = terms.loc[duplicate_terms | missing_term_id].copy()
+    add_log(log, "invalid_term_id", "Quarantine missing or duplicate Term_ID", (duplicate_terms | missing_term_id).sum())
     terms = terms.loc[~(duplicate_terms | missing_term_id)].copy()
     terms["Start_Date"] = pd.to_datetime(terms["Start_Date"], errors="coerce")
     terms["End_Date"] = pd.to_datetime(terms["End_Date"], errors="coerce")
