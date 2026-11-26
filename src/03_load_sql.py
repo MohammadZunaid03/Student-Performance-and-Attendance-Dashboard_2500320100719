@@ -23,7 +23,11 @@ def require_env(name):
 
 
 def rows(frame, columns):
-    return [tuple(None if pd.isna(v) else v for v in row)
+    def native(value):
+        if pd.isna(value):
+            return None
+        return value.item() if hasattr(value, "item") else value
+    return [tuple(native(v) for v in row)
             for row in frame[columns].itertuples(index=False, name=None)]
 
 
