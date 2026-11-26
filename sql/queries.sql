@@ -45,7 +45,10 @@ GROUP BY s.student_id, s.student_name ORDER BY failed_subjects DESC;
 SELECT s.student_id, s.student_name, ROUND(AVG(a.attendance_percentage),2) average_attendance
 FROM fact_attendance a JOIN dim_student s ON s.student_key=a.student_key
 GROUP BY s.student_id, s.student_name
-HAVING AVG(a.attendance_percentage) < 75
+HAVING AVG(a.attendance_percentage) < (
+           SELECT numeric_value FROM dim_business_rule
+           WHERE rule_key = 'ATTENDANCE_THRESHOLD_PCT'
+         )
 ORDER BY average_attendance;
 
 -- Q7. Attendance and marks at the shared student-subject-term grain.
