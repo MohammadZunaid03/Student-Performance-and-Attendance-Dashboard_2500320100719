@@ -118,12 +118,17 @@ def main():
     bounds = marks.merge(subjects[["Subject_ID", "Maximum_Marks", "Passing_Marks"]],
                          on="Subject_ID", how="left", validate="many_to_one")
     # Synthetic source split is documented as 40 internal + 60 external.
-    invalid = ((bounds["Record_Status"] == "PRESENT") &
-               (bounds["Internal_Marks"].isna() | bounds["External_Marks"].isna() |
-                (bounds["Internal_Marks"] < 0) | (bounds["Internal_Marks"] > INTERNAL_MAX) |
-                (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > EXTERNAL_MAX) |
-                ((bounds["Internal_Marks"] + bounds["External_Marks"]) > bounds["Maximum_Marks"]) |
-                ~bounds["Record_Status"].isin(["PRESENT", "ABSENT", "MISSING"])))
+    invalid_status = ~bounds["Record_Status"].isin(["PRESENT", "ABSENT", "MISSING"])
+    invalid_present = (
+        bounds["Record_Status"].eq("PRESENT")
+        & (
+            bounds["Internal_Marks"].isna() | bounds["External_Marks"].isna()
+            | (bounds["Internal_Marks"] < 0) | (bounds["Internal_Marks"] > INTERNAL_MAX)
+            | (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > EXTERNAL_MAX)
+            | ((bounds["Internal_Marks"] + bounds["External_Marks"]) > bounds["Maximum_Marks"])
+        )
+    )
+    invalid = invalid_status | invalid_present
     add_log(log, "marks_out_of_range_or_incomplete", "Quarantine invalid status, incomplete/out-of-range marks or totals above subject maximum", invalid.sum())
     mark_rejects = pd.concat([mark_rejects, bounds.loc[invalid, marks.columns]], ignore_index=True)
     bounds = bounds.loc[~invalid].copy()
