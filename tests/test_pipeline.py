@@ -186,3 +186,26 @@ def test_exact_pass_and_total_mark_boundaries():
     minimum = marks[(marks["Student_ID"] == "STU003") & (marks["Subject_ID"] == "SUB03")].iloc[0]
     assert minimum["Total_Marks"] == 0
     assert minimum["Result"] == "FAIL"
+
+
+def test_invalid_status_and_absent_scores_are_quarantined():
+    rejected = pd.read_csv(CLEAN / "quarantine_marks.csv")
+    assert (rejected["Record_Status"] == "UNKNOWN").any()
+    invalid_absent = rejected[
+        rejected["Record_Status"].eq("ABSENT")
+        & (pd.to_numeric(rejected["Internal_Marks"], errors="coerce").notna()
+           | pd.to_numeric(rejected["External_Marks"], errors="coerce").notna())
+    ]
+    assert not invalid_absent.empty
+
+
+def test_fractional_attendance_counts_are_quarantined():
+    rejected = pd.read_csv(CLEAN / "quarantine_attendance.csv")
+    assert (pd.to_numeric(rejected["Total_Classes"], errors="coerce") % 1 != 0).any()
+
+
+def test_quality_log_has_before_and_after_treatment():
+    log = pd.read_csv(ROOT / "reports" / "data_quality_log.csv")
+    assert {"issue", "rule_applied", "rows_affected", "before", "after"}.issubset(log.columns)
+    assert log["before"].notna().all()
+    assert log["after"].notna().all()
