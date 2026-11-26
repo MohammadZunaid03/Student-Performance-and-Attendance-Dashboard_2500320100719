@@ -4,6 +4,8 @@ Run: python src/04_analysis_charts.py
 """
 from pathlib import Path
 import pandas as pd
+import numpy as np
+import seaborn as sns
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -43,7 +45,7 @@ def main():
     pass_count = int(scored["Result"].eq("PASS").sum())
     fail_count = int(scored["Result"].eq("FAIL").sum())
     pass_rate = (pass_count / len(scored) * 100) if len(scored) else 0.0
-    avg_marks = float(scored["Total_Marks"].mean()) if len(scored) else 0.0
+    avg_marks = float(np.nanmean(scored["Total_Marks"].to_numpy())) if len(scored) else 0.0
     avg_attendance = float(attendance["Attendance_Percentage"].mean()) if len(attendance) else 0.0
     low_threshold = float(RULES["attendance_threshold_pct"])
     student_att = attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
@@ -52,7 +54,7 @@ def main():
 
     # 1. Marks distribution.
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(scored["Total_Marks"].dropna(), bins=15, edgecolor="black")
+    sns.histplot(data=scored, x="Total_Marks", bins=15, ax=ax)
     ax.set(title="Distribution of Student Marks", xlabel="Total marks (out of 100)", ylabel="Student-subject records")
     save(fig, "01_marks_distribution.png")
 
@@ -73,7 +75,7 @@ def main():
 
     # 4. Attendance distribution.
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.hist(attendance["Attendance_Percentage"].dropna(), bins=15, edgecolor="black")
+    sns.histplot(data=attendance, x="Attendance_Percentage", bins=15, ax=ax)
     ax.axvline(low_threshold, linestyle="--", label=f"Provisional threshold: {low_threshold:.0f}%")
     ax.set(title="Attendance Percentage Distribution", xlabel="Attendance (%)", ylabel="Student-subject records")
     ax.legend()
@@ -85,7 +87,7 @@ def main():
         on=["Student_ID", "Subject_ID", "Term_ID"], how="inner", validate="one_to_one"
     )
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.scatter(relation["Attendance_Percentage"], relation["Total_Marks"], alpha=0.65)
+    sns.scatterplot(data=relation, x="Attendance_Percentage", y="Total_Marks", alpha=0.65, ax=ax)
     ax.set(title="Attendance vs Academic Marks", xlabel="Attendance (%)", ylabel="Total marks")
     save(fig, "05_attendance_vs_marks.png")
 
@@ -157,7 +159,6 @@ def main():
         "- Missing and absent marks are not converted to zero.",
         "- The attendance threshold and grade rules are provisional demonstration settings.",
         "- Top 10 means dense rank <= 10, so ties at the cutoff are included.",
-        "- The attendance threshold and grade rules are provisional demonstration settings.",
         "- Correlation is descriptive and does not establish causation.",
         "- Review quarantine outputs before treating any metric as final.",
     ]
