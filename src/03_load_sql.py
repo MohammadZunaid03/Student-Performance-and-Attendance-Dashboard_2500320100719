@@ -7,7 +7,7 @@ This script performs a controlled full reload (DELETE + INSERT + COMMIT).
 import os
 from pathlib import Path
 import pandas as pd
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 import oracledb
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -77,7 +77,7 @@ def main():
                 current = start
                 while current <= end:
                     date_rows.append((
-                        int(current.strftime("%Y%m%d")), current,
+                        int(current.strftime("%Y%m%d")), datetime.combine(current, time.min),
                         current.year, (current.month - 1) // 3 + 1,
                         current.month, current.strftime("%B"), current.day
                     ))
@@ -145,19 +145,21 @@ def main():
               f"marks={len(marks)}, attendance={len(attendance)}")
 
         RESULTS.mkdir(parents=True, exist_ok=True)
+        for old_result in RESULTS.glob("query_*.csv"):
+            old_result.unlink()
         sql_text = SQL_FILE.read_text(encoding="utf-8")
         sql_text = "\n".join(line for line in sql_text.splitlines()
                                 if not line.lstrip().startswith("--"))
         statements = [s.strip() for s in sql_text.split(";") if s.strip()]
         with connection.cursor() as cur:
-            for statement in statements:
+            for query_number, statement in enumerate(statements, start=1):
                 if not statement or statement.startswith("--"):
                     continue
                 cur.execute(statement)
                 if cur.description:
                     columns = [d[0] for d in cur.description]
                     output = pd.DataFrame(cur.fetchall(), columns=columns)
-                    name = f"query_{len(list(RESULTS.glob('query_*.csv'))) + 1:02d}.csv"
+                    name = f"query_{query_number:02d}.csv"
                     output.to_csv(RESULTS / name, index=False)
                     print(f"Exported {name}: {len(output)} rows")
     except Exception:
