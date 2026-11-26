@@ -6,15 +6,18 @@ Raw files intentionally contain documented quality defects and fictional records
 import csv
 from datetime import date
 from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from business_rules import RULES
 
 SEED = 20261126
 STUDENT_COUNT = 200
 SUBJECTS = [
-    ("SUB01", "Programming in C++", 100, 40),
-    ("SUB02", "Database Management Systems", 100, 40),
-    ("SUB03", "Data Structures", 100, 40),
-    ("SUB04", "Computer Networks", 100, 40),
-    ("SUB05", "Mathematics for Computing", 100, 40),
+    ("SUB01", "Programming in C++", RULES["assessment_components"]["total_max"], RULES["passing_marks_default"]),
+    ("SUB02", "Database Management Systems", RULES["assessment_components"]["total_max"], RULES["passing_marks_default"]),
+    ("SUB03", "Data Structures", RULES["assessment_components"]["total_max"], RULES["passing_marks_default"]),
+    ("SUB04", "Computer Networks", RULES["assessment_components"]["total_max"], RULES["passing_marks_default"]),
+    ("SUB05", "Mathematics for Computing", RULES["assessment_components"]["total_max"], RULES["passing_marks_default"]),
 ]
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
@@ -66,8 +69,11 @@ def main():
     for student in students:
         ability = rng.randint(32, 92)
         for subject_id, subject_name, maximum, passing in SUBJECTS:
-            internal = max(0, min(40, int(ability * 0.40 + rng.randint(-7, 7) + 0.5)))
-            external = max(0, min(60, int(ability * 0.60 + rng.randint(-10, 10) + 0.5)))
+            internal_max = int(RULES["assessment_components"]["internal_max"])
+            external_max = int(RULES["assessment_components"]["external_max"])
+            total_max = int(RULES["assessment_components"]["total_max"])
+            internal = max(0, min(internal_max, int(ability * internal_max / total_max + rng.randint(-7, 7) + 0.5)))
+            external = max(0, min(external_max, int(ability * external_max / total_max + rng.randint(-10, 10) + 0.5)))
             status = "PRESENT"
             if student["Student_ID"] == "STU016" and subject_id == "SUB02":
                 status, internal, external = "ABSENT", "", ""
@@ -97,7 +103,7 @@ def main():
     students[10]["Department"] = ""
     students[11]["Student_Name"] = "  sTuDeNt 012 "
     students.append(dict(students[9]))
-    marks[0]["Internal_Marks"] = 120
+    marks[0]["Internal_Marks"] = int(RULES["assessment_components"]["internal_max"]) + 80
     marks[1]["External_Marks"] = -5
     marks.append(dict(marks[4]))
     attendance[0]["Present_Classes"] = attendance[0]["Total_Classes"] + 3
