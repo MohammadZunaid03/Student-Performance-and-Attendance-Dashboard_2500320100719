@@ -28,7 +28,25 @@ def read_csv(name):
 
 
 def add_log(log, issue, rule, count):
-    log.append({"issue": issue, "rule_applied": rule, "rows_affected": int(count)})
+    details = {
+        "students_missing_id": ("Student_ID is blank or null", "Row retained in quarantine_students.csv"),
+        "duplicate_students": ("Duplicate Student_ID", "First row retained; duplicate rows quarantined"),
+        "missing_department": ("Department is blank or null", "Department set to UNKNOWN; no department inferred"),
+        "subjects_missing_id": ("Subject_ID is blank or null", "Row retained in quarantine_subjects.csv"),
+        "duplicate_subjects": ("Duplicate Subject_ID", "First row retained; duplicate rows quarantined"),
+        "duplicate_marks": ("Duplicate student-subject-term grain", "First row retained; duplicate rows quarantined"),
+        "marks_invalid_foreign_key": ("Missing or unknown Student_ID / Subject_ID", "Row moved to quarantine_marks.csv"),
+        "marks_out_of_range_or_incomplete": ("Invalid status, missing score, component out of range or total above subject maximum", "Row moved to quarantine_marks.csv"),
+        "absent_marks": ("Record_Status=ABSENT; scores blank", "ABSENT retained and score remains null"),
+        "missing_marks": ("Record_Status=MISSING; scores blank", "MISSING retained and score remains null"),
+        "duplicate_attendance": ("Duplicate student-subject-term grain", "First row retained; duplicate rows quarantined"),
+        "attendance_invalid_foreign_key": ("Missing or unknown Student_ID / Subject_ID", "Row moved to quarantine_attendance.csv"),
+        "attendance_invalid_counts": ("Missing/non-integer/impossible class counts", "Row moved to quarantine_attendance.csv"),
+        "invalid_academic_terms": ("Invalid date or end date before start date", "Row moved to quarantine_academic_terms.csv"),
+    }
+    before, after = details.get(issue, ("Raw source value(s)", rule))
+    log.append({"issue": issue, "rule_applied": rule, "rows_affected": int(count),
+                "before": before, "after": after})
 
 
 def grade_for(total):
@@ -65,11 +83,15 @@ def main():
 
     # Subject master.
     subjects = read_csv("subjects.csv")
+    subjects["Subject_ID"] = subjects["Subject_ID"].astype("string").str.strip()
+    missing_subject_id = subjects["Subject_ID"].isna() | subjects["Subject_ID"].eq("")
+    subject_rejects = subjects.loc[missing_subject_id].copy()
+    add_log(log, "subjects_missing_id", "Quarantine rows without Subject_ID", missing_subject_id.sum())
+    subjects = subjects.loc[~missing_subject_id].copy()
     dup = subjects.duplicated(subset=["Subject_ID"], keep="first")
     add_log(log, "duplicate_subjects", "Keep first Subject_ID", dup.sum())
-    subject_rejects = subjects.loc[dup].copy()
+    subject_rejects = pd.concat([subject_rejects, subjects.loc[dup]], ignore_index=True)
     subjects = subjects.loc[~dup].copy()
-    subjects["Subject_ID"] = subjects["Subject_ID"].astype("string").str.strip()
     subjects["Subject_Name"] = subjects["Subject_Name"].astype("string").str.strip().str.title()
     subjects.to_csv(CLEAN / "subjects.csv", index=False)
     subject_rejects.to_csv(CLEAN / "quarantine_subjects.csv", index=False)
@@ -102,7 +124,7 @@ def main():
                 (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > EXTERNAL_MAX) |
                 ((bounds["Internal_Marks"] + bounds["External_Marks"]) > bounds["Maximum_Marks"]) |
                 ~bounds["Record_Status"].isin(["PRESENT", "ABSENT", "MISSING"])))
-    add_log(log, "marks_out_of_range_or_incomplete", "Quarantine PRESENT rows with missing/out-of-range component marks", invalid.sum())
+    add_log(log, "marks_out_of_range_or_incomplete", "Quarantine invalid status, incomplete/out-of-range marks or totals above subject maximum", invalid.sum())
     mark_rejects = pd.concat([mark_rejects, bounds.loc[invalid, marks.columns]], ignore_index=True)
     bounds = bounds.loc[~invalid].copy()
     add_log(log, "absent_marks", "Retain ABSENT rows with null score; never coerce to zero", (bounds["Record_Status"] == "ABSENT").sum())
@@ -137,9 +159,10 @@ def main():
     for col in ["Total_Classes", "Present_Classes"]:
         attendance[col] = pd.to_numeric(attendance[col], errors="coerce")
     invalid = (attendance["Total_Classes"].isna() | attendance["Present_Classes"].isna() |
+               (attendance["Total_Classes"] % 1 != 0) | (attendance["Present_Classes"] % 1 != 0) |
                (attendance["Total_Classes"] <= 0) | (attendance["Present_Classes"] < 0) |
                (attendance["Present_Classes"] > attendance["Total_Classes"]))
-    add_log(log, "attendance_invalid_counts", "Quarantine non-positive totals or present counts outside 0..total", invalid.sum())
+    add_log(log, "attendance_invalid_counts", "Quarantine missing/non-integer counts, non-positive totals or present counts outside 0..total", invalid.sum())
     attendance_rejects = pd.concat([attendance_rejects, attendance.loc[invalid]], ignore_index=True)
     attendance = attendance.loc[~invalid].copy()
     attendance["Absent_Classes"] = attendance["Total_Classes"] - attendance["Present_Classes"]
@@ -158,7 +181,7 @@ def main():
     terms.loc[~bad_terms].to_csv(CLEAN / "academic_terms.csv", index=False)
     terms.loc[bad_terms].to_csv(CLEAN / "quarantine_academic_terms.csv", index=False)
 
-    pd.DataFrame(log, columns=["issue", "rule_applied", "rows_affected"]).to_csv(
+    pd.DataFrame(log, columns=["issue", "rule_applied", "rows_affected", "before", "after"]).to_csv(
         REPORTS / "data_quality_log.csv", index=False
     )
     print("Cleaning complete.")
