@@ -97,6 +97,7 @@ Run from the repository root:
 python src/01_generate_data.py
 python src/02_clean_data.py
 python src/07_export_business_rules.py
+python src/08_render_star_schema.py
 python src/04_analysis_charts.py
 python src/05_build_excel_workbook.py
 python src/06_manual_validation.py
