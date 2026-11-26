@@ -7,9 +7,11 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
+RULES = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
 st.set_page_config(page_title="Student Performance & Attendance", page_icon="📊", layout="wide")
 st.title("Student Performance and Attendance Dashboard")
 st.caption("Data source: project synthetic dataset (fictional demonstration records). Refresh by rerunning the data pipeline.")
@@ -58,7 +60,7 @@ pass_count = int(scored["Result"].eq("PASS").sum())
 pass_rate = pass_count / len(scored) * 100 if len(scored) else 0.0
 avg_marks = scored["Total_Marks"].mean()
 avg_attendance = filtered_attendance["Attendance_Percentage"].mean()
-low_threshold = 75.0  # Provisional demonstration threshold; confirm policy.
+low_threshold = float(RULES["attendance_threshold_pct"])
 
 k1, k2, k3, k4 = st.columns(4)
 k1.metric("Total Students", f"{filtered_students['Student_ID'].nunique():,}")
