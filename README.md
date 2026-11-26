@@ -92,10 +92,11 @@ python src/01_generate_data.py
 python src/02_clean_data.py
 python src/04_analysis_charts.py
 python src/05_build_excel_workbook.py
+python src/06_manual_validation.py
 python tests/run_tests.py
 ```
 
-The generator is deterministic. It writes synthetic CSV files under data/raw. The cleaning script writes accepted data to data/clean, rejected records to quarantine CSVs and a row-level issue summary to reports/data_quality_log.csv. The analysis script writes charts and reports/analysis_summary.md.
+The generator is deterministic. It writes synthetic CSV files under data/raw. The cleaning script writes accepted data to data/clean, rejected records to quarantine CSVs and a row-level issue summary to reports/data_quality_log.csv. The analysis script writes charts, reports/analysis_summary.md, low-attendance, topper and pass-rate CSVs. The manual validation script independently checks 20 student records.
 
 ## Streamlit dashboard
 After running the cleaning pipeline:
