@@ -50,6 +50,11 @@ def main():
     marks = pd.read_csv(CLEAN / "marks.csv")
     attendance = pd.read_csv(CLEAN / "attendance.csv")
     raw_marks = pd.read_csv(ROOT / "data" / "raw" / "marks.csv")
+    raw_students = pd.read_csv(ROOT / "data" / "raw" / "students.csv")
+    raw_subjects = pd.read_csv(ROOT / "data" / "raw" / "subjects.csv")
+    raw_attendance = pd.read_csv(ROOT / "data" / "raw" / "attendance.csv")
+    raw_terms = pd.read_csv(ROOT / "data" / "raw" / "academic_terms.csv")
+    rules = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
     marks_detail = marks.merge(students, on="Student_ID", how="left").merge(
         subjects[["Subject_ID", "Subject_Name"]], on="Subject_ID", how="left")
 
@@ -57,6 +62,10 @@ def main():
     ws = wb.active
     ws.title = "Raw_Data"
     add_frame(ws, raw_marks, "RawMarks")
+    add_frame(wb.create_sheet("Raw_Students"), raw_students, "RawStudents")
+    add_frame(wb.create_sheet("Raw_Subjects"), raw_subjects, "RawSubjects")
+    add_frame(wb.create_sheet("Raw_Attendance"), raw_attendance, "RawAttendance")
+    add_frame(wb.create_sheet("Raw_Academic_Terms"), raw_terms, "RawAcademicTerms")
     ws = wb.create_sheet("Cleaned_Data")
     add_frame(ws, marks_detail, "CleanedMarks")
 
@@ -65,6 +74,8 @@ def main():
         marks[marks["Record_Status"].eq("PRESENT")].groupby("Student_ID")["Total_Marks"].sum())
     student_summary["Average_Attendance"] = student_summary["Student_ID"].map(
         attendance.groupby("Student_ID")["Attendance_Percentage"].mean())
+    student_summary["Rank"] = student_summary["Aggregate_Marks"].rank(method="min", ascending=False).astype("Int64")
+    student_summary["Topper_Status"] = student_summary["Rank"].map(lambda value: "TOPPER" if value == 1 else "")
     ws = wb.create_sheet("Student_Summary")
     add_frame(ws, student_summary, "StudentSummary")
 
@@ -88,9 +99,9 @@ def main():
     ws.append(["Average Marks (scored records)", '=AVERAGEIF(CleanedMarks[Record_Status],"PRESENT",CleanedMarks[Total_Marks])'])
     ws.append(["Pass Percentage (scored records)", '=IFERROR(COUNTIF(CleanedMarks[Result],"PASS")/COUNTIF(CleanedMarks[Record_Status],"PRESENT")*100,0)'])
     ws.append(["Average Attendance", "=AVERAGE(AttendanceAnalysis[Attendance_Percentage])"])
-    ws.append(["Provisional Low Attendance Threshold", 75])
+    ws.append(["Configured Low Attendance Threshold", float(rules["attendance_threshold_pct"])])
     ws.append(["Data Source", "Synthetic fictional demonstration dataset"])
-    ws.append(["Note", "Open in Excel; formulas recalculate on open. Create PivotTables and slicers using the tables."])
+    ws.append(["Note", "Open in Excel; formulas recalculate on open. Create native PivotTables and slicers using the tables."])
     chart = BarChart()
     chart.title = "Subject-wise Average Marks"
     chart.y_axis.title = "Average Marks"
@@ -103,14 +114,43 @@ def main():
 
     ws = wb.create_sheet("Validation")
     ws.append(["Metric", "Python Result", "Oracle SQL Result", "Excel Result", "Match Status"])
-    metrics = ["Total Students", "Average Marks", "Average Attendance", "Pass Percentage", "Low Attendance Count"]
-    for i, metric in enumerate(metrics, start=2):
-        ws.append([metric, None, None, None,
-                   f'=IF(AND(B{i}<>"",C{i}<>""),IF(AND(ABS(B{i}-C{i})<0.01,ABS(B{i}-D{i})<0.01),"MATCH","MISMATCH"),"PENDING")'])
-    ws.append(["Instructions", "Populate from executed Python summary", "Populate from Oracle query", "Link to dashboard/verified calculation", "Do not claim MATCH until values are supplied"])
+    scored = marks[marks["Record_Status"].eq("PRESENT")]
+    low_count = int((attendance.groupby("Student_ID")["Attendance_Percentage"].mean() < float(rules["attendance_threshold_pct"])).sum())
+    python_values = {
+        "Total Students": int(students["Student_ID"].nunique()),
+        "Average Marks": float(scored["Total_Marks"].mean()),
+        "Average Attendance": float(attendance["Attendance_Percentage"].mean()),
+        "Pass Percentage": float(scored["Result"].eq("PASS").sum() / len(scored) * 100),
+        "Low Attendance Count": low_count,
+    }
+    excel_formulas = {
+        "Total Students": "=COUNTA(StudentSummary[Student_ID])",
+        "Average Marks": '=AVERAGEIF(CleanedMarks[Record_Status],"PRESENT",CleanedMarks[Total_Marks])',
+        "Average Attendance": "=AVERAGE(AttendanceAnalysis[Attendance_Percentage])",
+        "Pass Percentage": '=IFERROR(COUNTIFS(CleanedMarks[Record_Status],"PRESENT",CleanedMarks[Result],"PASS")/COUNTIF(CleanedMarks[Record_Status],"PRESENT")*100,0)',
+        "Low Attendance Count": '=COUNTIF(StudentSummary[Average_Attendance],"<"&Dashboard!B6)',
+    }
+    for i, metric in enumerate(python_values, start=2):
+        ws.append([metric, python_values[metric], None, excel_formulas[metric],
+                   f'=IF(C{i}="","PENDING",IF(AND(ABS(B{i}-C{i})<0.01,ABS(B{i}-D{i})<0.01),"MATCH","MISMATCH"))'])
+    ws.append(["Instructions", "Calculated from cleaned CSVs", "Fill only after Oracle execution", "Formula-based Excel result", "PENDING until Oracle result is entered"])
 
+    rules_rows = [
+        ("ATTENDANCE_THRESHOLD_PCT", rules["attendance_threshold_pct"], "Provisional threshold"),
+        ("INTERNAL_MARKS_MAX", rules["assessment_components"]["internal_max"], "Synthetic internal maximum"),
+        ("EXTERNAL_MARKS_MAX", rules["assessment_components"]["external_max"], "Synthetic external maximum"),
+        ("TOTAL_MARKS_MAX", rules["assessment_components"]["total_max"], "Synthetic total maximum"),
+        ("PASSING_MARKS_DEFAULT", rules["passing_marks_default"], "Synthetic default passing mark"),
+    ]
+    rule_ws = wb.create_sheet("Business_Rules")
+    add_frame(rule_ws, pd.DataFrame(rules_rows, columns=["Rule_Key", "Numeric_Value", "Description"]), "BusinessRules")
+    grade_ws = wb.create_sheet("Grade_Bands")
+    add_frame(grade_ws, pd.DataFrame([(x["grade"], x["min_score"]) for x in rules["grade_bands"]],
+                                     columns=["Grade", "Minimum_Score"]), "GradeBands")
     for sheet in wb.worksheets:
         style_sheet(sheet)
+    wb.calculation.fullCalcOnLoad = True
+    wb.calculation.forceFullCalc = True
     OUT.parent.mkdir(parents=True, exist_ok=True)
     wb.save(OUT)
 
