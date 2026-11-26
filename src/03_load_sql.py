@@ -8,6 +8,9 @@ import os
 from pathlib import Path
 import pandas as pd
 import oracledb
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from business_rules import RULES
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
@@ -48,7 +51,7 @@ def main():
     try:
         with connection.cursor() as cur:
             # Controlled reload: delete facts before dimensions to respect foreign keys.
-            for table in ["fact_marks", "fact_attendance", "dim_date",
+            for table in ["fact_marks", "fact_attendance", "dim_grade_band", "dim_business_rule", "dim_date",
                           "dim_student", "dim_subject", "dim_academic_term"]:
                 cur.execute(f"DELETE FROM {table}")
 
@@ -69,12 +72,22 @@ def main():
             cur.execute("SELECT subject_id, subject_key FROM dim_subject")
             subject_keys = dict(cur.fetchall())
             cur.execute("SELECT term_id, term_key FROM dim_academic_term")
-            term_key = dict(cur.fetchall())[str(terms.iloc[0]["Term_ID"])]
+            term_keys = dict(cur.fetchall())
+
+            cur.executemany(
+                "INSERT INTO dim_business_rule (rule_key, numeric_value, description) VALUES (:1,:2,:3)",
+                [("ATTENDANCE_THRESHOLD_PCT", float(RULES["attendance_threshold_pct"]),
+                  "Provisional attendance threshold from config/business_rules.json")],
+            )
+            cur.executemany(
+                "INSERT INTO dim_grade_band (grade_code, minimum_score) VALUES (:1,:2)",
+                [(str(item["grade"]), float(item["min_score"])) for item in RULES["grade_bands"]],
+            )
 
             mark_rows = []
             for r in marks.itertuples(index=False):
                 mark_rows.append((
-                    str(r.Marks_ID), student_keys[str(r.Student_ID)], subject_keys[str(r.Subject_ID)], term_key,
+                    str(r.Marks_ID), student_keys[str(r.Student_ID)], subject_keys[str(r.Subject_ID)], term_keys[str(r.Term_ID)],
                     None if pd.isna(r.Internal_Marks) else float(r.Internal_Marks),
                     None if pd.isna(r.External_Marks) else float(r.External_Marks),
                     None if pd.isna(r.Total_Marks) else float(r.Total_Marks),
@@ -90,7 +103,7 @@ def main():
             attendance_rows = []
             for r in attendance.itertuples(index=False):
                 attendance_rows.append((
-                    str(r.Attendance_ID), student_keys[str(r.Student_ID)], subject_keys[str(r.Subject_ID)], term_key,
+                    str(r.Attendance_ID), student_keys[str(r.Student_ID)], subject_keys[str(r.Subject_ID)], term_keys[str(r.Term_ID)],
                     int(r.Total_Classes), int(r.Present_Classes), int(r.Absent_Classes),
                     float(r.Attendance_Percentage)
                 ))
