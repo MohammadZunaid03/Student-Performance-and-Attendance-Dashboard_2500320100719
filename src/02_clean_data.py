@@ -92,6 +92,17 @@ def main():
     add_log(log, "duplicate_subjects", "Keep first Subject_ID", dup.sum())
     subject_rejects = pd.concat([subject_rejects, subjects.loc[dup]], ignore_index=True)
     subjects = subjects.loc[~dup].copy()
+    for col in ["Maximum_Marks", "Passing_Marks"]:
+        subjects[col] = pd.to_numeric(subjects[col], errors="coerce")
+    invalid_subject_rules = (
+        subjects["Maximum_Marks"].isna() | subjects["Passing_Marks"].isna()
+        | (subjects["Maximum_Marks"] <= 0) | (subjects["Passing_Marks"] < 0)
+        | (subjects["Passing_Marks"] > subjects["Maximum_Marks"])
+        | (subjects["Maximum_Marks"] % 1 != 0) | (subjects["Passing_Marks"] % 1 != 0)
+    )
+    add_log(log, "subjects_invalid_marks_policy", "Quarantine subjects with invalid maximum or passing marks", invalid_subject_rules.sum())
+    subject_rejects = pd.concat([subject_rejects, subjects.loc[invalid_subject_rules]], ignore_index=True)
+    subjects = subjects.loc[~invalid_subject_rules].copy()
     subjects["Subject_Name"] = subjects["Subject_Name"].astype("string").str.strip().str.title()
     subjects.to_csv(CLEAN / "subjects.csv", index=False)
     subject_rejects.to_csv(CLEAN / "quarantine_subjects.csv", index=False)
@@ -125,10 +136,15 @@ def main():
             bounds["Internal_Marks"].isna() | bounds["External_Marks"].isna()
             | (bounds["Internal_Marks"] < 0) | (bounds["Internal_Marks"] > INTERNAL_MAX)
             | (bounds["External_Marks"] < 0) | (bounds["External_Marks"] > EXTERNAL_MAX)
+            | (bounds["Internal_Marks"] % 1 != 0) | (bounds["External_Marks"] % 1 != 0)
             | ((bounds["Internal_Marks"] + bounds["External_Marks"]) > bounds["Maximum_Marks"])
         )
     )
-    invalid = invalid_status | invalid_present
+    invalid_special = (
+        bounds["Record_Status"].isin(["ABSENT", "MISSING"])
+        & (bounds["Internal_Marks"].notna() | bounds["External_Marks"].notna())
+    )
+    invalid = invalid_status | invalid_present | invalid_special
     add_log(log, "marks_out_of_range_or_incomplete", "Quarantine invalid status, incomplete/out-of-range marks or totals above subject maximum", invalid.sum())
     mark_rejects = pd.concat([mark_rejects, bounds.loc[invalid, marks.columns]], ignore_index=True)
     bounds = bounds.loc[~invalid].copy()
@@ -179,13 +195,19 @@ def main():
 
     # Terms are metadata and are copied after basic date validation.
     terms = read_csv("academic_terms.csv")
+    terms["Term_ID"] = terms["Term_ID"].astype("string").str.strip()
+    duplicate_terms = terms.duplicated(["Term_ID"], keep="first")
+    missing_term_id = terms["Term_ID"].isna() | terms["Term_ID"].eq("")
+    term_id_rejects = terms.loc[duplicate_terms | missing_term_id].copy()
+    terms = terms.loc[~(duplicate_terms | missing_term_id)].copy()
     terms["Start_Date"] = pd.to_datetime(terms["Start_Date"], errors="coerce")
     terms["End_Date"] = pd.to_datetime(terms["End_Date"], errors="coerce")
     bad_terms = terms["Start_Date"].isna() | terms["End_Date"].isna() | (terms["End_Date"] < terms["Start_Date"])
     add_log(log, "invalid_academic_terms", "Quarantine terms with invalid dates or end before start", bad_terms.sum())
     valid_terms = terms.loc[~bad_terms].copy()
     valid_terms.to_csv(CLEAN / "academic_terms.csv", index=False)
-    terms.loc[bad_terms].to_csv(CLEAN / "quarantine_academic_terms.csv", index=False)
+    term_rejects = pd.concat([term_id_rejects, terms.loc[bad_terms]], ignore_index=True)
+    term_rejects.to_csv(CLEAN / "quarantine_academic_terms.csv", index=False)
     if len(valid_terms) != 1:
         raise ValueError(
             "The current source facts do not carry a term identifier. "
