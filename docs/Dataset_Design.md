@@ -72,6 +72,8 @@ The counts include deliberate defects. Cleaning must report accepted, corrected,
 - Internal mark above maximum and negative external mark.
 - One explicitly absent marks record and one missing marks record.
 - Exact marks boundary cases: 0, the configured passing mark (40 in the current demo), and the configured maximum (100).
+- Invalid record status, an ABSENT row with populated score components, fractional attendance class count and impossible attendance count.
+- Blank attendance Student_ID, blank student Department, inconsistent Student_Name casing/spacing and missing marks/result values in the raw source.
 - Attendance present count greater than total classes.
 
 ## Business-rule caveats
