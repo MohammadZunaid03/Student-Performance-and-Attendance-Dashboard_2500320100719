@@ -4,6 +4,7 @@ Run: python src/05_build_excel_workbook.py
 Open the generated workbook in Excel to add native PivotTables and slicers.
 """
 from pathlib import Path
+import json
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
