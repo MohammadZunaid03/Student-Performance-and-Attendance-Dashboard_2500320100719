@@ -7,6 +7,9 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from business_rules import RULES
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
@@ -42,7 +45,7 @@ def main():
     pass_rate = (pass_count / len(scored) * 100) if len(scored) else 0.0
     avg_marks = float(scored["Total_Marks"].mean()) if len(scored) else 0.0
     avg_attendance = float(attendance["Attendance_Percentage"].mean()) if len(attendance) else 0.0
-    low_threshold = 75.0  # Provisional demo threshold; confirm institutional policy.
+    low_threshold = float(RULES["attendance_threshold_pct"])
     student_att = attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
     low_attendance = student_att[student_att < low_threshold]
     low_attendance.rename("Average_Attendance_Percentage").to_csv(REPORTS / "low_attendance_students.csv")
