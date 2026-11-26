@@ -77,23 +77,54 @@ def test_attendance_ranges_and_calculations():
     assert attendance["Attendance_Percentage"].between(0, 100).all()
 
 
-def test_python_totals_match_oracle_when_configured():
+def test_python_kpis_match_oracle_when_configured():
     if not all(os.getenv(k) for k in ["ORACLE_USER", "ORACLE_PASSWORD", "ORACLE_DSN"]):
         pytest.skip("Oracle credentials not configured; integration comparison not run")
+    import json
     import oracledb
     marks = load("marks.csv")
-    expected = float(marks.loc[marks["Record_Status"].eq("PRESENT"), "Total_Marks"].sum())
+    attendance = load("attendance.csv")
+    students = load("students.csv")
+    rules = json.loads((ROOT / "config" / "business_rules.json").read_text(encoding="utf-8"))
+    scored = marks[marks["Record_Status"].eq("PRESENT")]
+    expected = {
+        "total_marks": float(scored["Total_Marks"].sum()),
+        "average_marks": float(scored["Total_Marks"].mean()),
+        "average_attendance": float(attendance["Attendance_Percentage"].mean()),
+        "pass_percentage": float(scored["Result"].eq("PASS").sum() / len(scored) * 100),
+        "student_count": int(students["Student_ID"].nunique()),
+        "low_attendance_count": int((attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
+                                     < float(rules["attendance_threshold_pct"])).sum()),
+    }
     conn = oracledb.connect(user=os.environ["ORACLE_USER"],
                             password=os.environ["ORACLE_PASSWORD"],
                             dsn=os.environ["ORACLE_DSN"])
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT SUM(total_marks) FROM fact_marks WHERE record_status='PRESENT'")
-            actual = float(cur.fetchone()[0] or 0)
-        assert abs(expected - actual) < 0.01
+            cur.execute("""
+                SELECT
+                    SUM(CASE WHEN record_status='PRESENT' THEN total_marks END),
+                    AVG(CASE WHEN record_status='PRESENT' THEN total_marks END),
+                    (SELECT AVG(attendance_percentage) FROM fact_attendance),
+                    100 * SUM(CASE WHEN result='PASS' AND record_status='PRESENT' THEN 1 ELSE 0 END)
+                        / NULLIF(SUM(CASE WHEN record_status='PRESENT' THEN 1 ELSE 0 END),0),
+                    (SELECT COUNT(*) FROM dim_student),
+                    (SELECT COUNT(*) FROM (
+                        SELECT student_key FROM fact_attendance
+                        GROUP BY student_key
+                        HAVING AVG(attendance_percentage) < (
+                            SELECT numeric_value FROM dim_business_rule
+                            WHERE rule_key='ATTENDANCE_THRESHOLD_PCT'
+                        )
+                    ))
+                FROM fact_marks
+            """)
+            actual = cur.fetchone()
+        keys = list(expected)
+        for key, value in zip(keys, actual):
+            assert abs(float(value) - expected[key]) < 0.01, f"{key}: Oracle={value}, Python={expected[key]}"
     finally:
         conn.close()
-
 
 
 def test_grade_boundaries_are_consistent_with_demo_policy():
