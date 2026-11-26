@@ -102,6 +102,8 @@ def main():
 
         RESULTS.mkdir(parents=True, exist_ok=True)
         sql_text = SQL_FILE.read_text(encoding="utf-8")
+        sql_text = "\\n".join(line for line in sql_text.splitlines()
+                                if not line.lstrip().startswith("--"))
         statements = [s.strip() for s in sql_text.split(";") if s.strip()]
         with connection.cursor() as cur:
             for statement in statements:
