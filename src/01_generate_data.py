@@ -4,7 +4,6 @@ Run from repository root: python src/01_generate_data.py
 Raw files intentionally contain documented quality defects and fictional records.
 """
 import csv
-import random
 from datetime import date
 from pathlib import Path
 
@@ -21,6 +20,22 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "raw"
 
 
+class DeterministicRng:
+    """Small cross-language LCG so generated CSVs can be reproduced exactly."""
+    def __init__(self, seed):
+        self.state = seed
+
+    def randbelow(self, upper):
+        self.state = (1664525 * self.state + 1013904223) % (2 ** 32)
+        return self.state % upper
+
+    def randint(self, lower, upper):
+        return lower + self.randbelow(upper - lower + 1)
+
+    def choice(self, values):
+        return values[self.randbelow(len(values))]
+
+
 def write_csv(path, rows, columns):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as handle:
@@ -30,7 +45,7 @@ def write_csv(path, rows, columns):
 
 
 def main():
-    rng = random.Random(SEED)
+    rng = DeterministicRng(SEED)
     students = []
     departments = ["CSE", "IT", "ECE"]
     for n in range(1, STUDENT_COUNT + 1):
@@ -51,8 +66,8 @@ def main():
     for student in students:
         ability = rng.randint(32, 92)
         for subject_id, subject_name, maximum, passing in SUBJECTS:
-            internal = max(0, min(40, round(ability * 0.40 + rng.randint(-7, 7))))
-            external = max(0, min(60, round(ability * 0.60 + rng.randint(-10, 10))))
+            internal = max(0, min(40, int(ability * 0.40 + rng.randint(-7, 7) + 0.5)))
+            external = max(0, min(60, int(ability * 0.60 + rng.randint(-10, 10) + 0.5)))
             status = "PRESENT"
             if student["Student_ID"] == "STU016" and subject_id == "SUB02":
                 status, internal, external = "ABSENT", "", ""
