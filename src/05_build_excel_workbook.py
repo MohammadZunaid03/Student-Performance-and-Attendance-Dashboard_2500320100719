@@ -166,6 +166,19 @@ def main():
     grade_ws = wb.create_sheet("Grade_Bands")
     add_frame(grade_ws, pd.DataFrame([(x["grade"], x["min_score"]) for x in rules["grade_bands"]],
                                      columns=["Grade", "Minimum_Score"]), "GradeBands")
+    quality_ws = wb.create_sheet("Data_Quality_Checks")
+    quality_ws.append(["Check", "Raw Result", "Clean Result", "Interpretation"])
+    quality_rows = [
+        ("Duplicate Student_ID", int(raw_students.duplicated(["Student_ID"]).sum()), int(students.duplicated(["Student_ID"]).sum()), "Duplicate master records are quarantined"),
+        ("Missing Student_ID", int(raw_students["Student_ID"].isna().sum()), int(students["Student_ID"].isna().sum()), "Required IDs must not be missing"),
+        ("Duplicate Subject_ID", int(raw_subjects.duplicated(["Subject_ID"]).sum()), int(subjects.duplicated(["Subject_ID"]).sum()), "Duplicate subject records are quarantined"),
+        ("Duplicate marks student-subject", int(raw_marks.duplicated(["Student_ID","Subject_ID"]).sum()), int(marks.duplicated(["Student_ID","Subject_ID"]).sum()), "Duplicate fact records are quarantined"),
+        ("Duplicate attendance student-subject", int(raw_attendance.duplicated(["Student_ID","Subject_ID"]).sum()), int(attendance.duplicated(["Student_ID","Subject_ID"]).sum()), "Duplicate fact records are quarantined"),
+        ("Quarantined marks rows", len(pd.read_csv(CLEAN / "quarantine_marks.csv")), 0, "Review quarantine_marks.csv"),
+        ("Quarantined attendance rows", len(pd.read_csv(CLEAN / "quarantine_attendance.csv")), 0, "Review quarantine_attendance.csv"),
+    ]
+    for item in quality_rows:
+        quality_ws.append(list(item))
     for sheet in wb.worksheets:
         style_sheet(sheet)
     wb.calculation.fullCalcOnLoad = True
