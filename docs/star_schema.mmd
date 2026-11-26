@@ -1,0 +1,53 @@
+erDiagram
+    DIM_STUDENT ||--o{ FACT_MARKS : student_key
+    DIM_SUBJECT ||--o{ FACT_MARKS : subject_key
+    DIM_ACADEMIC_TERM ||--o{ FACT_MARKS : term_key
+    DIM_STUDENT ||--o{ FACT_ATTENDANCE : student_key
+    DIM_SUBJECT ||--o{ FACT_ATTENDANCE : subject_key
+    DIM_ACADEMIC_TERM ||--o{ FACT_ATTENDANCE : term_key
+    DIM_DATE {
+        number date_key PK
+        date calendar_date
+    }
+    DIM_STUDENT {
+        number student_key PK
+        string student_id UK
+        string student_name
+        string department
+        number semester
+        string section
+    }
+    DIM_SUBJECT {
+        number subject_key PK
+        string subject_id UK
+        string subject_name
+        number maximum_marks
+        number passing_marks
+    }
+    DIM_ACADEMIC_TERM {
+        number term_key PK
+        string term_id UK
+        string academic_year
+        date start_date
+        date end_date
+    }
+    FACT_MARKS {
+        number marks_fact_key PK
+        string source_marks_id UK
+        number student_key FK
+        number subject_key FK
+        number term_key FK
+        number total_marks
+        string result
+        string record_status
+    }
+    FACT_ATTENDANCE {
+        number attendance_fact_key PK
+        string source_attendance_id UK
+        number student_key FK
+        number subject_key FK
+        number term_key FK
+        number total_classes
+        number present_classes
+        number attendance_percentage
+    }
