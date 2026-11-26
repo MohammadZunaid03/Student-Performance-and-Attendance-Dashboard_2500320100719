@@ -95,10 +95,16 @@ def main():
             cur.execute("SELECT term_id, term_key FROM dim_academic_term")
             term_keys = dict(cur.fetchall())
 
+            rule_rows = [
+                ("ATTENDANCE_THRESHOLD_PCT", float(RULES["attendance_threshold_pct"]), "Provisional attendance threshold"),
+                ("INTERNAL_MARKS_MAX", float(RULES["assessment_components"]["internal_max"]), "Synthetic internal marks maximum"),
+                ("EXTERNAL_MARKS_MAX", float(RULES["assessment_components"]["external_max"]), "Synthetic external marks maximum"),
+                ("TOTAL_MARKS_MAX", float(RULES["assessment_components"]["total_max"]), "Synthetic total marks maximum"),
+                ("PASSING_MARKS_DEFAULT", float(RULES["passing_marks_default"]), "Synthetic default passing marks; subject value is authoritative"),
+            ]
             cur.executemany(
                 "INSERT INTO dim_business_rule (rule_key, numeric_value, description) VALUES (:1,:2,:3)",
-                [("ATTENDANCE_THRESHOLD_PCT", float(RULES["attendance_threshold_pct"]),
-                  "Provisional attendance threshold from config/business_rules.json")],
+                rule_rows,
             )
             cur.executemany(
                 "INSERT INTO dim_grade_band (grade_code, minimum_score) VALUES (:1,:2)",
