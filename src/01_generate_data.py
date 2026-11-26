@@ -111,11 +111,14 @@ def main():
     marks[10]["Internal_Marks"], marks[10]["External_Marks"], marks[10]["Total_Marks"] = 0, passing_boundary, passing_boundary
     marks[11]["Internal_Marks"], marks[11]["External_Marks"], marks[11]["Total_Marks"] = internal_max, external_max, total_max
     marks[12]["Internal_Marks"], marks[12]["External_Marks"], marks[12]["Total_Marks"] = 0, 0, 0
+    marks[13]["Record_Status"] = "UNKNOWN"
+    marks[14]["Record_Status"] = "ABSENT"  # Invalid: score components are still populated.
     marks[0]["Internal_Marks"] = internal_max + 80
     marks[1]["External_Marks"] = -5
     marks.append(dict(marks[4]))
     attendance[0]["Present_Classes"] = attendance[0]["Total_Classes"] + 3
     attendance[1]["Student_ID"] = ""
+    attendance[2]["Total_Classes"] = 40.5  # Invalid non-integer class count.
     attendance.append(dict(attendance[2]))
 
     terms = [{
