@@ -48,14 +48,16 @@ The purpose is to provide a reproducible way to analyse student performance, att
 ## 5. Non-functional requirements
 | ID | Requirement | Measurement / acceptance target |
 |---|---|---|
-| NFR1 | Reproducibility | Same input and fixed seed produce same synthetic dataset |
-| NFR2 | Data integrity | All accepted fact rows reference valid dimension keys |
-| NFR3 | Auditability | Every cleaning rule and affected-row count is logged |
-| NFR4 | Correctness | At least 20 selected records manually reconcile after rules are confirmed |
-| NFR5 | Maintainability | Business thresholds and grade boundaries are configured in one place |
-| NFR6 | Privacy | Public repository contains only synthetic/anonymised records |
-| NFR7 | Usability | Report labels, units, filters and metric definitions are documented |
-| NFR8 | Reliability | Pipeline exits with a clear error and non-zero status on invalid required inputs |
+| NFR1 | Reproducibility | Same fixed seed and configuration produce byte-identical raw CSV files on repeated runs |
+| NFR2 | Data integrity | 100% of accepted fact rows reference valid student, subject and term keys |
+| NFR3 | Auditability | Every defined cleaning rule records issue, rule, affected rows, before and after treatment |
+| NFR4 | Correctness | At least 20/20 selected records reconcile with independent hand calculations |
+| NFR5 | Maintainability | Attendance threshold, component maxima and grade bands are stored in one JSON configuration source |
+| NFR6 | Privacy | Public repository contains no real student PII or credentials |
+| NFR7 | Usability | Every KPI has a documented definition, denominator, unit and filter context |
+| NFR8 | Reliability | Missing required inputs cause a clear error and non-zero process exit |
+| NFR9 | Performance | The 200-student/1,000-fact synthetic pipeline completes within 60 seconds in the CI runner |
+| NFR10 | Testability | Automated Python suite reports PASS/FAIL/SKIP and retains a machine-readable test report |
 
 ## 6. Data requirements
 Core entities: Students, Subjects, Academic_Terms, Marks and Attendance. IDs must be stable and unique in their master tables. Marks must be within configured valid ranges. Attendance counts must be non-negative, present classes cannot exceed conducted classes, and calculated attendance must be 0–100%. Absence and missingness must be represented separately.
