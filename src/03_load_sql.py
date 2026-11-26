@@ -7,6 +7,7 @@ This script performs a controlled full reload (DELETE + INSERT + COMMIT).
 import os
 from pathlib import Path
 import pandas as pd
+from datetime import timedelta
 import oracledb
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -67,6 +68,26 @@ def main():
                 "INSERT INTO dim_academic_term (term_id, academic_year, semester_label, start_date, end_date) VALUES (:1,:2,:3,TO_DATE(:4,'YYYY-MM-DD'),TO_DATE(:5,'YYYY-MM-DD'))",
                 rows(terms, ["Term_ID", "Academic_Year", "Semester", "Start_Date", "End_Date"]),
             )
+            # Populate a calendar reference dimension for the term dates.
+            # Fact records remain term-grain; no daily attendance event is fabricated.
+            date_rows = []
+            for term in terms.itertuples(index=False):
+                start = pd.to_datetime(term.Start_Date).date()
+                end = pd.to_datetime(term.End_Date).date()
+                current = start
+                while current <= end:
+                    date_rows.append((
+                        int(current.strftime("%Y%m%d")), current,
+                        current.year, (current.month - 1) // 3 + 1,
+                        current.month, current.strftime("%B"), current.day
+                    ))
+                    current += timedelta(days=1)
+            if date_rows:
+                cur.executemany(
+                    "INSERT INTO dim_date (date_key, calendar_date, calendar_year, calendar_quarter, calendar_month, month_name, day_of_month) VALUES (:1,:2,:3,:4,:5,:6,:7)",
+                    date_rows
+                )
+
             cur.execute("SELECT student_id, student_key FROM dim_student")
             student_keys = dict(cur.fetchall())
             cur.execute("SELECT subject_id, subject_key FROM dim_subject")
