@@ -26,7 +26,7 @@ Format percentages with % units, sort subject averages descending, use legible d
 
 | Visual | Type | Fields / measures | Filters |
 |---|---|---|---|
-| Top 10 students | Table | Student_ID, Student_Name, [Student Aggregate Marks], [Student Ranking] | Top 10 by aggregate; dense rank preserves ties |
+| Top 10 students | Table | Student_ID, Student_Name, [Student Aggregate Marks], [Student Ranking] | Visual filter [Student Ranking] <= 10; dense rank preserves ties (do not use a Top N filter that cuts tied rows) |
 | Subject performance | Bar chart | Subject_Name, [Subject Average Marks] | Department/semester/section |
 | Subject pass/fail | Matrix | Department rows, Subject_Name columns, [Pass Percentage], [Fail Count] | Cohort and subject |
 | Student subject detail | Table | Subject_Name, Total_Marks, Grade, Result, Attendance_Percentage | Drill-through by Student_ID |
