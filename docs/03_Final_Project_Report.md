@@ -4,7 +4,7 @@
 **Author:** Mohammad Zunaid  
 **Project domain:** Education / Academic Analytics  
 **Repository:** https://github.com/MohammadZunaid03/Student-Performance-and-Attendance-Dashboard_2500320100719  
-**Report basis:** GitHub Actions run 45820262431 (Python/BI-export/notebook/Excel/test pipeline successful).  
+**Report basis:** GitHub Actions run 45820665361 (Python/BI-export/notebook/Excel/test pipeline successful).  
 **Data classification:** Synthetic fictional demonstration data only.
 
 ## Abstract
@@ -131,14 +131,14 @@ Oracle facts:
 
 Do not join the two fact tables only by Student_ID. DIM_DATE is a calendar reference dimension; the current facts are term-level aggregates with no event date, so no daily date relationship is claimed.
 
-See sql/schema.sql, docs/database_design.md and docs/star_schema.mmd.
+See sql/schema.sql, docs/database_design.md, docs/star_schema.mmd and the generated docs/star_schema.png / docs/star_schema.svg in the CI artifact.
 
 ## 10. Python implementation
 - `src/01_generate_data.py`: deterministic raw dataset generator.
 - `src/02_clean_data.py`: validation, cleaning, derived fields, quarantine and quality log.
 - `src/04_analysis_charts.py`: seven labelled charts and KPI/summary CSV outputs.
 - `src/06_manual_validation.py`: independent grade/result arithmetic check for 20 students.
-- `src/07_export_business_rules.py`: Power BI-friendly rule CSV exports from the canonical JSON file.
+- `src/07_export_business_rules.py`: Power BI-friendly rule CSV exports from the canonical JSON file.\n- `src/08_render_star_schema.py`: generates PNG and SVG schema diagrams from the documented model.
 - `notebooks/Student_Performance_Analysis.ipynb`: executed EDA and KPI walkthrough.
 
 ## 11. Oracle SQL and PL/SQL
