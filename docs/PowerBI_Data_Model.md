@@ -1,23 +1,41 @@
 # Power BI Data Model and DAX
 
-## Import and relationships
-1. In Power BI Desktop select Get Data → Text/CSV and import the cleaned CSV files from data/clean.
-2. In Power Query confirm IDs are Text, marks/counts are Whole Number or Decimal Number, dates are Date, and null marks remain null. Select Close & Apply.
-3. Create one-to-many, single-direction relationships:
-   - Dim_Student[Student_ID] → Fact_Marks[Student_ID] and Fact_Attendance[Student_ID]
-   - Dim_Subject[Subject_ID] → both fact tables
-   - Dim_Academic_Term[Term_ID] → both fact tables
-4. Do not create a direct relationship between Fact_Marks and Fact_Attendance. Both facts share conformed dimensions and have the same student-subject-term grain in this sample.
-5. Create a calendar table only if date-level events are added. Current attendance and marks CSVs are term-level aggregates, not daily records.
+## Files to import
+In Power BI Desktop use Home → Get data → Text/CSV to import:
+- `data/clean/students.csv` as Dim_Student
+- `data/clean/subjects.csv` as Dim_Subject
+- `data/clean/academic_terms.csv` as Dim_Academic_Term
+- `data/clean/marks.csv` as Fact_Marks
+- `data/clean/attendance.csv` as Fact_Attendance
+- `config/business_rules.csv` as Business_Rules
+- `config/grade_bands.csv` as Grade_Bands
 
-## Recommended semantic model
-Use the Oracle star schema in sql/schema.sql for a production-shaped model. For a CSV prototype, create Power Query dimension queries by referencing distinct student/subject/term tables and merge source IDs into facts, or use source IDs directly as dimension keys. Do not mix surrogate and natural keys.
+Run `python src/07_export_business_rules.py` to export configuration CSVs from the canonical `config/business_rules.json`.
+
+## Power Query types and relationships
+Set all IDs (Student_ID, Subject_ID, Term_ID, Marks_ID, Attendance_ID) to Text; marks/classes to Whole Number or Decimal; dates to Date. Preserve null marks for ABSENT/MISSING. Never replace them with zero.
+
+The raw marks and attendance CSVs do not contain Term_ID. The cleaning ETL adds the validated Term_ID to each cleaned fact because the current sample has exactly one valid academic term. The cleaner stops if multiple terms exist without a source mapping.
+
+Create one-to-many, single-direction relationships:
+- Dim_Student[Student_ID] → Fact_Marks[Student_ID]
+- Dim_Student[Student_ID] → Fact_Attendance[Student_ID]
+- Dim_Subject[Subject_ID] → Fact_Marks[Subject_ID]
+- Dim_Subject[Subject_ID] → Fact_Attendance[Subject_ID]
+- Dim_Academic_Term[Term_ID] → Fact_Marks[Term_ID]
+- Dim_Academic_Term[Term_ID] → Fact_Attendance[Term_ID]
+
+Never create a direct fact-to-fact relationship. Both fact tables have one row per student-subject-term. Use shared dimensions or validated key-level detail joins.
+
+## Calendar dimension limitation
+Oracle DIM_DATE is populated with calendar dates spanning each term. The current facts are term-level aggregates and contain no event date/date_key. Do not connect a calendar slicer to these facts or imply daily observations. When dated assessment/attendance events are available, add date keys to the appropriate facts and create date relationships. For this prototype, use Dim_Academic_Term for time filtering.
 
 ## DAX measures
-Assumptions: pass rate denominator includes PRESENT scored records only; ABSENT and MISSING are excluded from the scored pass-rate denominator and displayed separately. Low attendance is a provisional 75% threshold and must be confirmed.
+Create a dedicated Measures table and add the following measures. Import Business_Rules and Grade_Bands from the canonical JSON export so the attendance threshold is not hardcoded.
 
 ```dax
-Total Students = DISTINCTCOUNT(Dim_Student[Student_ID])
+Total Students =
+DISTINCTCOUNT(Dim_Student[Student_ID])
 
 Scored Records =
 CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Record_Status] = "PRESENT")
@@ -28,23 +46,29 @@ CALCULATE(SUM(Fact_Marks[Total_Marks]), Fact_Marks[Record_Status] = "PRESENT")
 Average Marks =
 DIVIDE([Total Marks], [Scored Records])
 
+Average Attendance =
+AVERAGE(Fact_Attendance[Attendance_Percentage])
+
 Pass Count =
-CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Result] = "PASS")
+CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Record_Status] = "PRESENT", Fact_Marks[Result] = "PASS")
 
 Fail Count =
-CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Result] = "FAIL")
+CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Record_Status] = "PRESENT", Fact_Marks[Result] = "FAIL")
 
 Pass Percentage =
 DIVIDE([Pass Count], [Scored Records], 0) * 100
 
-Average Attendance =
-AVERAGE(Fact_Attendance[Attendance_Percentage])
+Attendance Threshold =
+CALCULATE(
+    MAX(Business_Rules[Numeric_Value]),
+    FILTER(ALL(Business_Rules), Business_Rules[Rule_Key] = "ATTENDANCE_THRESHOLD_PCT")
+)
 
-Low Attendance Student Count =
+Low Attendance Count =
 COUNTROWS(
     FILTER(
         VALUES(Dim_Student[Student_ID]),
-        CALCULATE(AVERAGE(Fact_Attendance[Attendance_Percentage])) < 75
+        CALCULATE([Average Attendance]) < [Attendance Threshold]
     )
 )
 
@@ -52,14 +76,13 @@ Subject Average Marks =
 CALCULATE(AVERAGE(Fact_Marks[Total_Marks]), Fact_Marks[Record_Status] = "PRESENT")
 
 Student Aggregate Marks =
-CALCULATE([Total Marks], ALLEXCEPT(Dim_Student, Dim_Student[Student_ID]))
+[Total Marks]
 
-Student Rank =
+Student Ranking =
 RANKX(ALLSELECTED(Dim_Student[Student_ID]), [Student Aggregate Marks], , DESC, DENSE)
 
 Topper =
-VAR TopScore =
-    MAXX(ALLSELECTED(Dim_Student[Student_ID]), [Student Aggregate Marks])
+VAR TopScore = MAXX(ALLSELECTED(Dim_Student[Student_ID]), [Student Aggregate Marks])
 RETURN
     CONCATENATEX(
         FILTER(ALLSELECTED(Dim_Student), [Student Aggregate Marks] = TopScore),
@@ -73,20 +96,15 @@ Missing Marks Records =
 CALCULATE(COUNTROWS(Fact_Marks), Fact_Marks[Record_Status] = "MISSING")
 ```
 
-## Measure notes
-- Total Students counts distinct students in current filter context.
-- Scored Records counts present/scored student-subject rows.
-- Total Marks sums valid scored totals.
-- Average Marks is mean marks per scored subject record, not a student's percentage.
-- Pass Count and Fail Count count scored subject outcomes.
-- Pass Percentage uses scored records as denominator.
-- Average Attendance averages student-subject attendance percentages; for weighted attendance use total present / total classes instead.
-- Low Attendance Student Count counts students whose average subject attendance is below 75%.
-- Subject Average Marks is affected by the selected subject and cohort filters.
-- Student Aggregate Marks sums scored subject marks for the current student.
-- Student Rank uses dense ranking and preserves ties.
-- Topper returns all names tied at the top score.
-- Absent and Missing Marks Records are shown separately and are not treated as zero.
+## Definitions and validation
+- Pass Percentage = PASS / PRESENT scored student-subject rows × 100. ABSENT and MISSING are excluded and reported separately.
+- Average Marks is the mean of scored subject records, not a student's overall percentage.
+- Average Attendance is the unweighted mean of student-subject attendance percentages. A weighted rate can use SUM(Present_Classes)/SUM(Total_Classes)*100.
+- Low Attendance Count uses the configured threshold in Business_Rules.
+- Student Ranking uses dense rank; ties share the same rank.
+- Topper returns all students tied at the highest aggregate marks in the current filter context.
+- Grade_Bands is a reference table; grade values are generated by the shared Python business rule and stored in Fact_Marks.
+- Compare unfiltered measures with `reports/analysis_summary.md` and compare filtered measures only against matching filters in Python/Oracle.
 
-## Validation
-Compare every KPI with Python/Oracle for the same cohort, subject and term filters. If the institutional policy uses a different denominator, threshold or grade scheme, update the single business-rule definition and all implementations together.
+## Save
+Save the actual report as `powerbi/Student_Performance_Dashboard.pbix`. A PBIX is not present in the repository until it is created, saved, refreshed and inspected in Power BI Desktop.
