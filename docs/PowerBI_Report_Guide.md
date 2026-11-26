@@ -1,47 +1,68 @@
-# Power BI Report Build Guide
+# Power BI Three-Page Interactive Report Guide
+
+## Before building
+Complete the imports and relationships in `docs/PowerBI_Data_Model.md`. Import Business_Rules and Grade_Bands from the generated config CSVs. Keep the synthetic-data caption and refresh timestamp visible.
+
+## Global layout and slicers
+Use a 16:9 page, aligned visuals and readable labels. Add slicers for Academic Year, Semester, Department, Section and Subject. Use View → Sync slicers to sync across pages. Use Format → Edit interactions to verify filtering. Keep ABSENT and MISSING separate; never plot them as zero.
 
 ## Page 1 — Academic Performance Overview
-**Business question:** How is the selected cohort performing overall?
-- Four KPI cards: Total Students, Average Marks, Pass Percentage and Average Attendance.
-- Clustered column: pass/fail records by department.
-- Bar chart: subject-wise average marks.
-- Donut: PASS vs FAIL for scored records.
-- Slicers: academic year/term, semester, department, section.
-- Formatting: restrained palette, clear labels, percentage units, no truncated axes.
+**Question:** How is the selected cohort performing?
+
+| Visual | Type | Fields / measures | Filters |
+|---|---|---|---|
+| Total Students | Card | [Total Students] | All cohort slicers |
+| Average Marks | Card | [Average Marks] | PRESENT records only |
+| Pass Percentage | Card | [Pass Percentage] | PASS / PRESENT scored records |
+| Average Attendance | Card | [Average Attendance] | Mean student-subject percentage |
+| Pass/fail by department | Clustered column | Department, [Pass Count], [Fail Count] | Cohort slicers |
+| Subject average | Bar chart | Subject_Name, [Subject Average Marks] | Subject/cohort slicers |
+| Result distribution | Donut | Result, scored-record count | Record_Status = PRESENT |
+
+Format percentages with % units, sort subject averages descending, use legible data labels and avoid truncated axes.
 
 ## Page 2 — Student and Subject Analysis
-**Business question:** Which students and subjects need attention?
-- Top 10 table: student ID, name, aggregate marks and dense rank.
-- Bar chart: subject-wise average marks.
-- Matrix: department/section by subject with average marks and pass percentage.
-- Drill-through page or detail table by Student_ID showing subject marks, grade, result and attendance.
-- Slicers: subject, department, semester and section.
+**Question:** Which students and subjects need review?
+
+| Visual | Type | Fields / measures | Filters |
+|---|---|---|---|
+| Top 10 students | Table | Student_ID, Student_Name, [Student Aggregate Marks], [Student Ranking] | Top 10 by aggregate; dense rank preserves ties |
+| Subject performance | Bar chart | Subject_Name, [Subject Average Marks] | Department/semester/section |
+| Subject pass/fail | Matrix | Department rows, Subject_Name columns, [Pass Percentage], [Fail Count] | Cohort and subject |
+| Student subject detail | Table | Subject_Name, Total_Marks, Grade, Result, Attendance_Percentage | Drill-through by Student_ID |
+
+**Drill-through:** create a Student Detail page; add Dim_Student[Student_ID] to the Drill-through well; show student name, subject results and attendance; enable Keep all filters; add Insert → Buttons → Back.
 
 ## Page 3 — Attendance and Academic Risk
-**Business question:** Which students fall below the attendance policy and how do attendance and marks compare?
-- KPI: Average Attendance and Low Attendance Student Count.
-- Table: student ID, name, average attendance and threshold status.
-- Scatter: attendance percentage vs total marks at student-subject grain.
-- Bar chart: average attendance by subject.
-- Slicer: threshold (if implemented as a What-if parameter), term, department and semester.
-- Keep ABSENT and MISSING marks distinct.
+**Question:** Who is below the configured threshold, and how do attendance and marks vary together?
 
-## Build steps
-1. Load and model cleaned data using docs/PowerBI_Data_Model.md.
-2. Create DAX measures and verify them against Python summary and Oracle query outputs.
-3. Add each page and visuals as specified above.
-4. Configure slicers to filter all relevant visuals.
-5. Add drill-through using Student_ID; include a back button.
-6. Add a page-level caption: synthetic demonstration data, last refresh date and threshold assumption.
-7. Check interactions, sorting, blank handling and tie display.
-8. Save as powerbi/Student_Performance_Dashboard.pbix.
-9. Export page screenshots to powerbi/screenshots/ after the PBIX is built.
+| Visual | Type | Fields / measures | Filters |
+|---|---|---|---|
+| Average attendance | Card | [Average Attendance] | Cohort filters |
+| Low attendance count | Card | [Low Attendance Count] | Configured Business_Rules threshold |
+| Low attendance list | Table | Student_ID, Student_Name, average attendance | Below [Attendance Threshold] |
+| Attendance vs marks | Scatter | X Attendance_Percentage; Y Total_Marks; Details Student_ID; Legend Department | PRESENT marks; matching student-subject-term rows |
+| Attendance by subject | Bar chart | Subject_Name, average Attendance_Percentage | Cohort and term |
+| Attendance distribution | Histogram/column | Attendance_Percentage bins, student count | Cohort and subject |
+
+Do not interpret correlation as causation. These are synthetic observational records.
+
+## Slicers and refresh
+1. Insert slicers for Academic_Year, Semester, Department, Section and Subject.
+2. Sync the cohort slicers across pages.
+3. Check Edit interactions for every slicer and visual.
+4. Test a department, semester, section and subject selection.
+5. Clear all filters and compare headline KPIs to `reports/analysis_summary.md`.
+6. Refresh after replacing CSVs and confirm data types/relationships.
 
 ## Acceptance checks
-- Every KPI responds to intended slicers.
-- Topper visual includes ties.
-- Low-attendance list uses the approved threshold.
-- Missing and absent marks are not shown as zero.
-- Python, SQL and Power BI values reconcile under identical filters.
+- Headline measures reconcile with Python for identical filters.
+- Dense ranking preserves ties and Topper returns all tied names.
+- Low Attendance Count reads the imported threshold.
+- ABSENT/MISSING are not zero.
+- No direct fact-to-fact relationship or accidental row multiplication exists.
+- Every page identifies the data as synthetic.
+- Save as `powerbi/Student_Performance_Dashboard.pbix` and export genuine screenshots to `powerbi/screenshots/`.
 
-**Limitation:** A PBIX is a binary Power BI Desktop artifact and must be created/saved in Power BI Desktop. This guide does not claim that a PBIX has already been built.
+## Completion status
+This guide is implementation-ready, but it is not a PBIX. Power BI Desktop must create, save, refresh and inspect the actual report.
