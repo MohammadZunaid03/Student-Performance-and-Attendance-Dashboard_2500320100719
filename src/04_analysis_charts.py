@@ -95,10 +95,8 @@ def main():
 
     # 7. Subject-wise failure rate among scored PRESENT records only.
     subject_results = scored.merge(subjects[["Subject_ID", "Subject_Name"]], on="Subject_ID")
-    failure = subject_results.groupby("Subject_Name").apply(
-        lambda g: (g["Result"].eq("FAIL").sum() / len(g) * 100) if len(g) else 0,
-        include_groups=False
-    ).sort_values()
+    subject_results["Is_Fail"] = subject_results["Result"].eq("FAIL").astype(int)
+    failure = (subject_results.groupby("Subject_Name")["Is_Fail"].mean() * 100).sort_values()
     fig, ax = plt.subplots(figsize=(9, 5))
     failure.plot(kind="barh", ax=ax)
     ax.set(title="Subject-wise Failure Rate (Scored Records)", xlabel="Failure rate (%)", ylabel="Subject")
