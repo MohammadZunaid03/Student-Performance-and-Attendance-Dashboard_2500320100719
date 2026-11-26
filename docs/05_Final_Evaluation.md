@@ -1,49 +1,40 @@
-# Final Evaluation Checklist
-## Student Performance and Attendance Dashboard
+# Final Evaluation — Student Performance and Attendance Dashboard
 
-**Evaluation status:** Not yet final — several components require local execution or desktop application evidence.
+**Evaluation basis:** repository contents and successful GitHub Actions run 45820144140.  
+**Score:** 75 / 100 implementation coverage. This is an evidence-based project-completeness score, not a college-awarded academic grade.
 
-| Area | Evidence to inspect | Current status |
-|---|---|---|
-| Project definition, synopsis, SRS | docs/00_Project_Definition.md, docs/01_Synopsis.md, docs/02_SRS.md | Documentation committed |
-| Dataset generator and raw data | src/01_generate_data.py, data/raw/ | Committed; execution reproducibility to verify |
-| Data dictionary | docs/Data_Dictionary.md | Markdown dictionary committed; XLSX pending |
-| Cleaning pipeline | src/02_clean_data.py, docs/Cleaning_Rules.md | Code committed; runtime test pending |
-| Oracle schema | sql/schema.sql | DDL committed; Oracle compilation pending |
-| ER/star schema | docs/star_schema.mmd | Diagram source committed; rendered image pending |
-| SQL loader and queries | src/03_load_sql.py, sql/queries.sql | Code committed; Oracle execution pending |
-| PL/SQL | sql/plsql/academic_analytics_pkg.sql | Package committed; Oracle compilation pending |
-| Python charts | src/04_analysis_charts.py | Code committed; chart execution pending |
-| Jupyter notebook | notebooks/Student_Performance_Analysis.ipynb | Notebook committed; execution pending |
-| Streamlit | app/streamlit_app.py | Code committed; runtime review pending |
-| Power BI model/report | docs/PowerBI_Data_Model.md, docs/PowerBI_Report_Guide.md | Instructions committed; PBIX pending |
-| Excel | src/05_build_excel_workbook.py, docs/Excel_Workbook_Guide.md | Generator committed; workbook/PivotTables/slicers pending |
-| Automated tests | tests/test_pipeline.py, tests/run_tests.py | Tests committed; execution pending |
-| README | README.md | Updated |
-| Final report | docs/03_Final_Project_Report.md | Draft committed; results pending |
-| Viva | docs/04_Viva_Preparation.md | Question bank committed |
-| Demo video | External recording | Not created |
+| Area | Available marks | Awarded | Evidence / deduction |
+|---|---:|---:|---|
+| Requirements and documentation | 10 | 10 | Project definition, synopsis, SRS, data dictionary, guides and implementation notes |
+| Dataset and data quality | 15 | 15 | Deterministic synthetic generator, intentional defects, boundary cases, quarantine and before/after log |
+| Python pipeline and analysis | 15 | 15 | CI generation/cleaning, seven charts, KPI reports, executed notebook and manual 20-record check |
+| Oracle schema, SQL and PL/SQL | 20 | 10 | DDL, constraints, trigger, loader, ten queries, package and test script committed; Oracle compilation/execution and reconciliation not verified |
+| Power BI report | 15 | 7 | Data model, DAX, three-page visual plan, slicers and drill-through documented; PBIX/screenshots not created in Power BI Desktop |
+| Excel verification | 5 | 4 | Workbook, formulas, charts, data dictionary and validation generated; native PivotTables/slicers still require Excel Desktop |
+| Automated tests and reconciliation | 10 | 8 | 17 tests passed, 0 failed; one Oracle integration test skipped because credentials were not configured |
+| README, final report and demo | 10 | 6 | README, final report and viva bank complete; demonstration video not recorded |
+| **Total** | **100** | **75** | |
 
-## Final score
-Do not assign a final score until artifacts are executed and inspected. Suggested rubric:
-- Requirements and documentation: 10
-- Dataset and data quality: 15
-- Python pipeline and analysis: 15
-- Oracle schema, SQL and PL/SQL: 20
-- Power BI report: 15
-- Excel verification: 5
-- Automated testing and reconciliation: 10
-- README, report and demo: 10
+## Verification evidence
+- Python source compilation: PASS.
+- Synthetic data generation: PASS.
+- Data cleaning and quarantine: PASS.
+- Shared business-rule export: PASS.
+- Seven charts and KPI summary: PASS.
+- Jupyter notebook execution: PASS.
+- Excel workbook and data dictionary generation: PASS.
+- Independent manual validation: 20/20 PASS.
+- Automated tests: 17 PASS, 0 FAIL, 1 SKIP.
+- Streamlit dashboard smoke test: PASS.
+- Oracle compilation/reconciliation: NOT VERIFIED.
+- Power BI PBIX: NOT CREATED.
+- Native Excel PivotTables/slicers: NOT VERIFIED.
 
-Total: 100.
+## Final judgement
+The Python-centered prototype is reproducible and CI-validated. It is not accurate to describe the entire multi-platform solution as fully deployed or production-ready until Oracle, Power BI Desktop and Excel Desktop steps are completed and evidenced.
 
-## Required final evidence
-- Successful generator and cleaning run with row counts.
-- Data-quality log and quarantine review.
-- Oracle DDL/package compilation and query outputs.
-- Python charts and executed notebook.
-- Streamlit run evidence.
-- Completed PBIX and screenshots.
-- Excel workbook opened, recalculated and reviewed; native PivotTables/slicers checked.
-- Test report with PASS/FAIL/SKIP and Oracle reconciliation where configured.
-- Report numbers match actual outputs.
+## Required to reach full completion
+1. Oracle schema/trigger/package compilation, loader run, SQL outputs and KPI reconciliation.
+2. Power BI PBIX creation, refresh, slicer/drill-through checks and screenshots.
+3. Excel native PivotTables/slicers, refresh and reconciliation.
+4. Final demonstration recording and review.
