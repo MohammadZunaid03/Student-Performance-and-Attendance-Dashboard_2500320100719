@@ -113,7 +113,53 @@ def main():
         style_sheet(sheet)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     wb.save(OUT)
+
+    # Create the requested data dictionary workbook from the documented source schema.
+    dictionary_rows = [
+        ("students", "Student_ID", "Text", "Stable student identifier", "STU001", "No"),
+        ("students", "Student_Name", "Text", "Fictional student display name", "Student 001", "No"),
+        ("students", "Department", "Text", "Department code", "CSE / UNKNOWN", "Raw yes; clean no"),
+        ("students", "Semester", "Integer", "Semester number", "3 or 4", "No"),
+        ("students", "Section", "Text", "Class section", "A or B", "No"),
+        ("subjects", "Subject_ID", "Text", "Subject identifier", "SUB01", "No"),
+        ("subjects", "Subject_Name", "Text", "Subject title", "Programming in C++", "No"),
+        ("subjects", "Subject_Code", "Text", "Subject code", "SUB01", "No"),
+        ("subjects", "Maximum_Marks", "Integer", "Maximum combined marks", "100", "No"),
+        ("subjects", "Passing_Marks", "Integer", "Synthetic passing mark", "40", "No"),
+        ("marks", "Marks_ID", "Text", "Source marks row identifier", "M00001", "No"),
+        ("marks", "Student_ID", "Text", "Student foreign key", "STU001", "No"),
+        ("marks", "Subject_ID", "Text", "Subject foreign key", "SUB01", "No"),
+        ("marks", "Internal_Marks", "Integer", "Internal score; synthetic max 40", "28", "Yes for ABSENT/MISSING"),
+        ("marks", "External_Marks", "Integer", "External score; synthetic max 60", "52", "Yes for ABSENT/MISSING"),
+        ("marks", "Total_Marks", "Integer", "Recomputed total score", "80", "Yes for ABSENT/MISSING"),
+        ("marks", "Grade", "Text", "Derived grade", "A", "Yes"),
+        ("marks", "Result", "Text", "Derived result/status", "PASS / FAIL / ABSENT / MISSING", "Yes in raw"),
+        ("marks", "Record_Status", "Text", "Source marks status", "PRESENT / ABSENT / MISSING", "No"),
+        ("attendance", "Attendance_ID", "Text", "Source attendance row identifier", "A00001", "No"),
+        ("attendance", "Student_ID", "Text", "Student foreign key", "STU001", "No"),
+        ("attendance", "Subject_ID", "Text", "Subject foreign key", "SUB01", "No"),
+        ("attendance", "Total_Classes", "Integer", "Conducted classes", "40", "No; must be > 0"),
+        ("attendance", "Present_Classes", "Integer", "Attended classes", "34", "No; 0..Total_Classes"),
+        ("attendance", "Absent_Classes", "Integer", "Missed classes", "6", "Recomputed as total-present"),
+        ("attendance", "Attendance_Percentage", "Decimal", "Present / total × 100", "85.00", "No; 0..100"),
+        ("academic_terms", "Term_ID", "Text", "Academic term identifier", "TERM2026S1", "No"),
+        ("academic_terms", "Academic_Year", "Text", "Academic-year label", "2026-27", "No"),
+        ("academic_terms", "Semester", "Text", "Semester grouping", "3/4", "No"),
+        ("academic_terms", "Start_Date", "Date", "Term start date", "2026-07-01", "No"),
+        ("academic_terms", "End_Date", "Date", "Term end date", "2026-12-15", "No"),
+    ]
+    dict_wb = Workbook()
+    dict_ws = dict_wb.active
+    dict_ws.title = "Data_Dictionary"
+    dict_ws.append(["Table", "Column", "Type", "Description", "Example / Rule", "Nullable"])
+    for row in dictionary_rows:
+        dict_ws.append(list(row))
+    style_sheet(dict_ws)
+    dictionary_path = ROOT / "docs" / "Data_Dictionary.xlsx"
+    dictionary_path.parent.mkdir(parents=True, exist_ok=True)
+    dict_wb.save(dictionary_path)
     print(f"Workbook created: {OUT}")
+    print(f"Data dictionary created: {dictionary_path}")
 
 
 if __name__ == "__main__":
