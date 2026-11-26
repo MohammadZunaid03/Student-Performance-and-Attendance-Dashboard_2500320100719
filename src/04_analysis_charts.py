@@ -81,8 +81,8 @@ def main():
 
     # 5. Attendance versus marks at the common student-subject grain.
     relation = scored.merge(
-        attendance[["Student_ID", "Subject_ID", "Attendance_Percentage"]],
-        on=["Student_ID", "Subject_ID"], how="inner", validate="one_to_one"
+        attendance[["Student_ID", "Subject_ID", "Term_ID", "Attendance_Percentage"]],
+        on=["Student_ID", "Subject_ID", "Term_ID"], how="inner", validate="one_to_one"
     )
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.scatter(relation["Attendance_Percentage"], relation["Total_Marks"], alpha=0.65)
@@ -92,7 +92,10 @@ def main():
     # 6. Top ten students by sum of scored marks; ties are not silently broken.
     student_totals = scored.groupby("Student_ID", as_index=False)["Total_Marks"].sum()
     student_totals = student_totals.merge(students[["Student_ID", "Student_Name"]], on="Student_ID")
-    top = student_totals.sort_values(["Total_Marks", "Student_ID"], ascending=[False, True]).head(10)
+    student_totals["Dense_Rank"] = student_totals["Total_Marks"].rank(method="dense", ascending=False).astype(int)
+    top = student_totals.loc[student_totals["Dense_Rank"] <= 10].sort_values(
+        ["Dense_Rank", "Student_ID"]
+    )
     top.to_csv(REPORTS / "top_students.csv", index=False)
     pd.DataFrame([{"Pass_Records": pass_count, "Fail_Records": fail_count,
                    "Scored_Records": len(scored), "Pass_Percentage": round(pass_rate, 2),
@@ -113,6 +116,11 @@ def main():
     ax.set(title="Subject-wise Failure Rate (Scored Records)", xlabel="Failure rate (%)", ylabel="Subject")
     save(fig, "07_subject_failure_rate.png")
 
+    failed_students = int(scored.loc[scored["Result"].eq("FAIL"), "Student_ID"].nunique())
+    subject_failure = failure.sort_values(ascending=False)
+    correlation = relation[["Attendance_Percentage", "Total_Marks"]].corr().iloc[0, 1]
+    absent_count = int(marks["Record_Status"].eq("ABSENT").sum())
+    missing_count = int(marks["Record_Status"].eq("MISSING").sum())
     summary = [
         "# Analysis summary",
         "",
@@ -131,15 +139,26 @@ def main():
         f"- Average attendance: {avg_attendance:.2f}%",
         f"- Pass records: {pass_count}",
         f"- Fail records: {fail_count}",
+        f"- Distinct students with at least one failed subject: {failed_students}",
         f"- Pass percentage: {pass_rate:.2f}%",
-        f"- Students below provisional attendance threshold: {len(low_attendance)}",
+        f"- ABSENT marks records: {absent_count}",
+        f"- MISSING marks records: {missing_count}",
+        f"- Students below configured provisional attendance threshold: {len(low_attendance)}",
+        f"- Attendance/marks Pearson correlation (descriptive only): {correlation:.3f}",
+        f"- Highest subject average: {subject_avg.idxmax()} ({subject_avg.max():.2f})",
+        f"- Lowest subject average: {subject_avg.idxmin()} ({subject_avg.min():.2f})",
+        f"- Highest subject failure rate: {subject_failure.index[0]} ({subject_failure.iloc[0]:.2f}%)",
         "",
+
         "## Subject summary",
         subject_avg.rename("average_marks").to_frame().to_markdown(),
         "",
         "## Notes",
         "- Missing and absent marks are not converted to zero.",
         "- The attendance threshold and grade rules are provisional demonstration settings.",
+        "- Top 10 means dense rank <= 10, so ties at the cutoff are included.",
+        "- The attendance threshold and grade rules are provisional demonstration settings.",
+        "- Correlation is descriptive and does not establish causation.",
         "- Review quarantine outputs before treating any metric as final.",
     ]
     SUMMARY.parent.mkdir(parents=True, exist_ok=True)
