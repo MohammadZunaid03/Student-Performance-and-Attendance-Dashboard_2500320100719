@@ -6,12 +6,14 @@ institutional approval of the grade policy.
 """
 from pathlib import Path
 import pandas as pd
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from business_rules import RULES
 
 ROOT = Path(__file__).resolve().parents[1]
 CLEAN = ROOT / "data" / "clean"
 REPORTS = ROOT / "reports"
-GRADE_BANDS = [(90, "A+"), (80, "A"), (70, "B"), (60, "C"),
-               (50, "D"), (40, "E"), (0, "F")]
+GRADE_BANDS = [(int(item["min_score"]), item["grade"]) for item in RULES["grade_bands"]]
 
 
 def grade(total):
