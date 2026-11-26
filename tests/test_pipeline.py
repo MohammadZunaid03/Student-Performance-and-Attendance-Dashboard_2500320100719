@@ -141,3 +141,17 @@ def test_attendance_threshold_uses_canonical_config():
     expected = attendance.groupby("Student_ID")["Attendance_Percentage"].mean()
     low_ids = set(expected[expected < threshold].index)
     assert all(expected.loc[student_id] < threshold for student_id in low_ids)
+
+
+
+def test_exact_pass_and_total_mark_boundaries():
+    marks = load("marks.csv")
+    boundary = marks[(marks["Student_ID"] == "STU003") & (marks["Subject_ID"] == "SUB01")].iloc[0]
+    assert boundary["Total_Marks"] == 40
+    assert boundary["Result"] == "PASS"
+    maximum = marks[(marks["Student_ID"] == "STU003") & (marks["Subject_ID"] == "SUB02")].iloc[0]
+    assert maximum["Total_Marks"] == 100
+    assert maximum["Grade"] == "A+"
+    minimum = marks[(marks["Student_ID"] == "STU003") & (marks["Subject_ID"] == "SUB03")].iloc[0]
+    assert minimum["Total_Marks"] == 0
+    assert minimum["Result"] == "FAIL"
