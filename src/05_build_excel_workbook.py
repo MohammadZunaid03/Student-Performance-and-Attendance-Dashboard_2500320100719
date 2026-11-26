@@ -77,11 +77,16 @@ def main():
         attendance.groupby("Student_ID")["Attendance_Percentage"].mean())
     student_summary["Rank"] = student_summary["Aggregate_Marks"].rank(method="min", ascending=False).astype("Int64")
     student_summary["Topper_Status"] = student_summary["Rank"].map(lambda value: "TOPPER" if value == 1 else "")
+    student_summary["Department_Lookup_Check"] = ""
     ws = wb.create_sheet("Student_Summary")
     add_frame(ws, student_summary, "StudentSummary")
     for row in range(2, ws.max_row + 1):
-        ws.cell(row, 8, f'=RANK.EQ(F{row},$F$2:$F${ws.max_row},0)')
+        ws.cell(row, 6, f'=SUMIFS(CleanedMarks[Total_Marks],CleanedMarks[Student_ID],A{row},CleanedMarks[Record_Status],"PRESENT")')
+        ws.cell(row, 7, f'=AVERAGEIF(AttendanceAnalysis[Student_ID],A{row},AttendanceAnalysis[Attendance_Percentage])')
+        ws.cell(row, 8, f'=RANK.EQ(F{row},$F$2:$F$201,0)')
         ws.cell(row, 9, f'=IF(H{row}=1,"TOPPER","")')
+        ws.cell(row, 10, f'=XLOOKUP(A{row},CleanedMarks[Student_ID],CleanedMarks[Department],"NOT FOUND")')
+    ws.tables["StudentSummary"].ref = "A1:J201"
 
     ws = wb.create_sheet("Attendance_Analysis")
     attendance_detail = attendance.merge(students, on="Student_ID", how="left")
@@ -113,6 +118,7 @@ def main():
     ws.append(["Pass Percentage (scored records)", '=IFERROR(COUNTIF(CleanedMarks[Result],"PASS")/COUNTIF(CleanedMarks[Record_Status],"PRESENT")*100,0)'])
     ws.append(["Average Attendance", "=AVERAGE(AttendanceAnalysis[Attendance_Percentage])"])
     ws.append(["Configured Low Attendance Threshold", float(rules["attendance_threshold_pct"])])
+    ws.append(["Marks Total for PASS Records", '=SUMIF(CleanedMarks[Result],"PASS",CleanedMarks[Total_Marks])'])
     ws.append(["Data Source", "Synthetic fictional demonstration dataset"])
     ws.append(["Note", "Open in Excel; formulas recalculate on open. Create native PivotTables and slicers using the tables."])
     chart = BarChart()
