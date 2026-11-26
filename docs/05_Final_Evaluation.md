@@ -1,6 +1,6 @@
 # Final Evaluation — Student Performance and Attendance Dashboard
 
-**Evaluation basis:** repository contents and successful GitHub Actions run 45820262431.  
+**Evaluation basis:** repository contents and successful GitHub Actions run 45820665361.  
 **Score:** 75 / 100 implementation coverage. This is an evidence-based project-completeness score, not a college-awarded academic grade.
 
 | Area | Available marks | Awarded | Evidence / deduction |
@@ -25,7 +25,7 @@
 - Excel workbook and data dictionary generation: PASS.
 - Independent manual validation: 20/20 PASS.
 - Automated tests: 17 PASS, 0 FAIL, 1 SKIP.
-- Streamlit dashboard smoke test: PASS.
+- Streamlit dashboard smoke test: PASS.\n- Star-schema PNG/SVG rendering: PASS.
 - Oracle compilation/reconciliation: NOT VERIFIED.
 - Power BI PBIX: NOT CREATED.
 - Native Excel PivotTables/slicers: NOT VERIFIED.
