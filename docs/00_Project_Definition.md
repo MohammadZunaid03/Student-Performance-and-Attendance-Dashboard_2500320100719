@@ -9,10 +9,10 @@
 Academic marks and attendance are often maintained in separate records, making it difficult for faculty and academic coordinators to obtain a consistent view of student progress. Manual consolidation can delay identification of students with low attendance, weak subject performance or risk of failing. This project combines marks and attendance into a structured analytical dataset and presents verified academic indicators through SQL analysis and interactive dashboards.
 
 ### Objectives
-1. **Integrate academic records:** combine student, subject, marks and attendance records using stable student and subject identifiers; validate referential integrity before analysis.
-2. **Automate academic calculations:** calculate total/percentage, grade and pass/fail status using documented, configurable rules; verify a sample of at least 20 students manually.
-3. **Identify attendance and performance risks:** produce a student-level list below the configured attendance threshold and subject-level performance summaries.
-4. **Communicate results:** deliver a Power BI report with pass-rate, topper/rank and low-attendance views, backed by reproducible Python and Oracle SQL processing.
+1. **Integrate academic records:** process at least 200 fictional students, five subjects and 1,000 student-subject marks/attendance pairs; all accepted fact rows must reference valid student, subject and term dimensions.
+2. **Automate academic calculations:** calculate total marks, percentage, grade and pass/fail using the canonical configurable rules; independently hand-check at least 20 student records and require 100% agreement.
+3. **Identify attendance and performance risks:** produce a student-level below-threshold list, subject averages and failure rates; every accepted attendance value must be within 0–100%.
+4. **Communicate results:** generate at least seven labelled charts, a five-section interactive Streamlit dashboard, ten SQL business queries and a three-page Power BI report design; reconcile KPI values across tools when Oracle/Power BI execution is available.
 
 ### Business questions
 1. Which students have the highest overall academic performance, including ties?
@@ -30,14 +30,18 @@ Academic marks and attendance are often maintained in separate records, making i
 ### Proposed KPIs and definitions
 | KPI | Definition |
 |---|---|
-| Student count | Distinct valid Student_ID values in the selected cohort |
-| Average marks | Mean of valid scored records; absent/missing records are excluded and reported separately |
-| Pass rate | Passed eligible student-subject records divided by all eligible student-subject records × 100 |
-| Attendance % | Present classes divided by conducted classes × 100 |
-| Low-attendance count | Distinct students whose calculated attendance is below the configured threshold |
-| Topper/rank | Rank based on the documented aggregate marks/percentage rule; ties retain equal rank |
-| Subject average | Mean valid total marks for the subject |
-| Failure rate | Failed eligible student-subject records divided by eligible student-subject records × 100 |
+| KPI | Numerator | Denominator | Definition and exclusions |
+|---|---|---|---|
+| Student count | Distinct valid Student_ID | Not applicable | Distinct students in the selected cohort |
+| Average marks | Sum of valid PRESENT total marks | Count of PRESENT student-subject records | Mean scored mark; ABSENT/MISSING excluded and separately counted |
+| Pass rate | Count of PASS outcomes | Count of PRESENT scored student-subject records | PASS / PRESENT × 100; ABSENT/MISSING excluded |
+| Attendance % | Present_Classes | Total_Classes | Present / conducted × 100, calculated per student-subject |
+| Low-attendance count | Distinct students below threshold | Not applicable | Mean subject attendance below canonical configured threshold |
+| Topper/rank | Aggregate PRESENT marks | Not applicable | Dense rank by sum of scored subject marks; ties retain equal rank |
+| Subject average | Sum of PRESENT marks for subject | PRESENT scored records for subject | Mean scored marks for the subject |
+| Failure rate | FAIL outcomes for subject | PRESENT scored records for subject | FAIL / PRESENT × 100; ABSENT/MISSING excluded |
+| Absent records | Count of Record_Status=ABSENT | Not applicable | Kept distinct; not converted to zero |
+| Missing records | Count of Record_Status=MISSING | Not applicable | Kept distinct; not converted to zero |
 
 ### Rules and assumptions requiring institutional confirmation
 - The institution's official attendance threshold has not been supplied. It will be a configurable setting; **75% may be used only as a provisional demonstration default**, not represented as an institutional policy.
