@@ -28,9 +28,13 @@ jobs:
         run: python src/01_generate_data.py
       - name: Clean and validate data
         run: python src/02_clean_data.py
+      - name: Export shared business rules for BI
+        run: python src/07_export_business_rules.py
       - name: Generate analysis charts and summary
         run: python src/04_analysis_charts.py
-      - name: Build Excel workbook
+      - name: Execute Jupyter notebook
+        run: jupyter nbconvert --to notebook --execute notebooks/Student_Performance_Analysis.ipynb --output Student_Performance_Analysis.executed.ipynb --output-dir reports --ExecutePreprocessor.timeout=120
+      - name: Build Excel workbook and data dictionary
         run: python src/05_build_excel_workbook.py
       - name: Hand-check 20 student records
         run: python src/06_manual_validation.py
@@ -44,5 +48,8 @@ jobs:
           path: |
             reports/
             excel/
+            docs/Data_Dictionary.xlsx
+            config/business_rules.csv
+            config/grade_bands.csv
             data/clean/
           if-no-files-found: warn
